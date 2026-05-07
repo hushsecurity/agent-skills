@@ -1,0 +1,9 @@
+{
+  "name": "hush-uam",
+  "version": "0.1.0",
+  "description": "Hush UAM (Universal Access Management) toolkit — currently includes the hush-uam-manifest skill for authoring AccessCredential, AccessPrivilege, and AccessPolicy CRDs.",
+  "author": {
+    "name": "Hush Security"
+  },
+  "homepage": "https://github.com/hushsecurity/agent-skills"
+}

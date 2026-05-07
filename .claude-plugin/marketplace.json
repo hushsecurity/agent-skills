@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "hush-agent-skills",
+  "description": "Hush Security skills, plugins, and rules for AI coding agents — manifest authoring, troubleshooting, and other agent-assisted workflows for the Hush UAM operator and related Hush products.",
+  "owner": {
+    "name": "Hush Security"
+  },
+  "plugins": [
+    {
+      "name": "hush-uam",
+      "description": "Author Kubernetes manifests for the Hush UAM (Universal Access Management) operator — AccessCredential, AccessPrivilege, AccessPolicy CRDs.",
+      "category": "security",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/hushsecurity/agent-skills.git",
+        "path": "plugins/hush-uam",
+        "ref": "main"
+      }
+    }
+  ]
+}

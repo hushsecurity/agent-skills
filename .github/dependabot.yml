@@ -1,0 +1,11 @@
+version: 2
+updates:
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: monthly
+    day: "sunday"
+    time: "03:00"
+    timezone: "Asia/Jerusalem"
+  commit-message:
+    prefix: "HUSH-777 "

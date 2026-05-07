@@ -1,0 +1,15 @@
+name: Check tool wrappers in sync with canonical
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify tools/ matches canonical
+        run: bash scripts/sync-tools.sh --check
