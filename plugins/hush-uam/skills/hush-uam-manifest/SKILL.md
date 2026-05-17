@@ -138,7 +138,7 @@ spec:
   name: <display-name>              # what the API sees
   type: <type>                      # see "Type catalog" section
   description: <optional>
-  config:                           # non-sensitive fields go here
+  config:                           # non-sensitive fields go here; OMIT entirely for `plaintext` (no config fields)
     <field>: <value>
   secretRef:                        # only if the type has sensitive fields
     name: <k8s-secret-name>
