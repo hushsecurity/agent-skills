@@ -75,7 +75,7 @@ The order below is grouped by resource. Within each resource, structural choices
   - `AccessPolicy` only (cred and privilege already exist; the policy will reference them by `id` or `name`)
   - Single resource (`AccessCredential` only / `AccessPrivilege` only / `AccessPolicy` only)
 
-  Don't auto-assume the trio. The user might already have the cred and privilege managed via Hush API/UI/Terraform and only want a policy CR to wire attestation + delivery for a specific workload. If they pick "policy only" or "cred + policy", remember to ask whether the unowned references should use `name` (CR in `hush-security`) or `id` (managed externally) — see "Referencing credentials and privileges".
+  Don't auto-assume the trio. The user might already have the cred and privilege managed via Hush API/UI/Terraform and only want a policy CR to wire attestation + delivery for a specific workload. If they pick "policy only" or "cred + policy", remember to ask how the unowned references should be expressed: `name` (CR in `hush-security`), `id` (managed externally), or `remoteName` + `type` (managed externally, referred to by its Hush UAM display name) — see "Referencing credentials and privileges".
 - **Type** — `postgres`, `gemini`, `aws_access_key`, etc. Skip if implied by the prompt.
 
 #### 1. Policy (skip if no policy is being generated)
@@ -205,10 +205,10 @@ spec:
   name: <display-name>
   description: <optional>
   # enabled: true                 # OPTIONAL — see "How `enabled` interacts with drift correction" below
-  accessCredentialRef:            # exactly one of `name` or `id` — see "Referencing creds/privileges" below
+  accessCredentialRef:            # exactly one of `name`, `id`, or `remoteName`+`type` — see "Referencing creds/privileges" below
     name: <cred-cr-name>
   accessPrivilegeRefs:            # OMIT for types that don't take privileges (see below)
-    - name: <priv-cr-name>        # exactly one of `name` or `id` per entry
+    - name: <priv-cr-name>        # exactly one of `name`, `id`, or `remoteName`+`type` per entry
   attestationCriteria:            # min 1
     - type: k8s:ns                # one of: k8s:ns, k8s:sa, k8s:pod-label, k8s:pod-name, k8s:container-name
       value: <workload-namespace> # the *workload's* namespace — NOT hush-security
@@ -236,12 +236,13 @@ All other policy fields (`accessCredentialRef`, `accessPrivilegeRefs`, `attestat
 
 ## Referencing credentials and privileges
 
-`accessCredentialRef` and each entry of `accessPrivilegeRefs` accept **exactly one** of `name` or `id` — not both, not neither.
+`accessCredentialRef` and each entry of `accessPrivilegeRefs` accept **exactly one** of three forms — not zero, not more than one:
 
-- Use **`name`** when the credential or privilege is also being managed in Kubernetes as a CR in the same namespace. The operator resolves it to its underlying ID.
-- Use **`id`** when the credential or privilege was created outside Kubernetes (e.g. via the Hush API or UI) and exists only on the platform side, not as a CR.
+1. **`name`** — when the credential or privilege is also being managed in Kubernetes as a CR in the same namespace. The operator resolves it to its underlying ID.
+2. **`id`** — when the credential or privilege was created outside Kubernetes (e.g. via the Hush API or UI) and exists only on the platform side, not as a CR. Use this when the user has the platform ID handy.
+3. **`remoteName` + `type`** — when the credential or privilege was created outside Kubernetes and the user only knows it by its display name on the platform. The api-controller resolves the `remoteName`/`type` pair to an ID via Hush UAM within the deployment's scope. `type` is required here to disambiguate (e.g. `postgres`, `gemini`, `plaintext`, etc.).
 
-You can mix the two within a single policy — e.g. reference the credential by `name` (managed via CR in the same namespace) and the privilege by `id` (managed externally), or vice versa.
+You can mix the three forms freely within a single policy — e.g. reference the credential by `name` (CR in this namespace) and the privilege by `remoteName` + `type` (managed externally, only known by name).
 
 ```yaml
 # Both managed in K8s — refer by CR name
@@ -252,7 +253,7 @@ accessPrivilegeRefs:
 ```
 
 ```yaml
-# Both managed externally — refer by platform ID
+# Both managed externally with known IDs — refer by platform ID
 accessCredentialRef:
   id: acr_abc123
 accessPrivilegeRefs:
@@ -260,14 +261,29 @@ accessPrivilegeRefs:
 ```
 
 ```yaml
-# Mixed — credential is a CR, privilege was created via API/UI
+# Both managed externally, referred to by remote display name + type
+accessCredentialRef:
+  remoteName: pg-prod
+  type: postgres
+accessPrivilegeRefs:
+  - remoteName: pg-readonly
+    type: postgres
+```
+
+```yaml
+# Mixed — credential by CR name, privilege by remoteName + type
 accessCredentialRef:
   name: pg-prod
 accessPrivilegeRefs:
-  - id: apr_xyz789
+  - remoteName: pg-readonly
+    type: postgres
 ```
 
-When the user is unclear, default to `name` if you're also generating the matching credential/privilege CR, and `id` if they tell you the resource already exists on the platform.
+When the user is unclear, default to `name` if you're also generating the matching credential/privilege CR; otherwise ask whether they have the platform `id` or only the display name (`remoteName`).
+
+### `remoteName` ambiguity → error status
+
+`remoteName` + `type` is resolved by Hush UAM at reconcile time. If **more than one** credential (or privilege) with that exact display name *and* that exact type exists in the deployment's scope, the resolution is ambiguous and the policy's status will turn to **error** — the operator won't pick one arbitrarily. When you generate a manifest that uses `remoteName`, surface this risk to the user in a short post-manifest note so they can confirm the name is unique before applying.
 
 ## Types that don't take privileges
 
@@ -477,14 +493,16 @@ When a new credential type is added to Hush, add a new `references/<type>.md` fo
 4. **Decide the Secret strategy:**
    - If you're generating the Secret alongside the manifest, use canonical key names and skip `keyMappings`.
    - If the user references an existing Secret, ask for its actual key names and **emit `keyMappings` for every sensitive field** (identity map is fine). This avoids the "extra keys cause API failure" footgun.
-5. **For policies**, select the right `deliveryConfig` and remember to omit `accessPrivilegeRefs` for the no-privilege types.
+5. **For policies**, select the right `deliveryConfig` and remember to omit `accessPrivilegeRefs` for the no-privilege types. Decide how each unowned reference is expressed: `name` (CR in `hush-security`), `id` (managed externally, ID known), or `remoteName` + `type` (managed externally, only display name known).
 6. **Assemble the manifest** with explicit `apiVersion`/`kind`/`metadata.namespace: hush-security`. Default to multi-document YAML (`---` separator) when generating cred + privilege + policy together. Companion `Secret` documents must also live in `hush-security` so the operator can read them.
 7. **For sensitive fields**, generate a `kind: Secret` document alongside the credential, or note that the user must run `kubectl create secret generic <name> --from-literal=<key>=<value>` first.
 8. **Surface the required auth-principal permissions** for the credential's target system. After the manifest, print a clearly-labeled **"Required permissions on the auth principal"** block listing what the GCP SA / IAM role / DB user / API token needs in order for Hush to provision and rotate ephemeral credentials. Pull the list from `references/<type>.md` — every per-type file has a "Required permissions on the auth principal" section. If the per-type file lacks one or marks it "not applicable", say so explicitly to the user — don't invent permissions.
+9. **If the manifest uses `remoteName`**, append a short post-manifest warning: the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error. Ask the user to confirm uniqueness before applying.
 
 # Validation gotchas
 
-- `accessCredentialRef` and each entry of `accessPrivilegeRefs` accept exactly one of `name` or `id` (not both).
+- `accessCredentialRef` and each entry of `accessPrivilegeRefs` accept exactly one of `name`, `id`, or `remoteName`+`type` (never two of these, never none). When using `remoteName` it must be paired with `type`.
+- `remoteName` + `type` is resolved at reconcile time; if multiple remote entities share that name and type within the deployment, the policy status turns to **error**. Flag this to the user when you emit a `remoteName` reference.
 - `attestationCriteria.key` is required iff `type: k8s:pod-label`; it must be omitted for the other criterion types.
 - Delivery item names: env uses `^[a-zA-Z_][a-zA-Z0-9_]*$`; sdk uses `^[a-zA-Z0-9/_+=.@-]+$`; volume `path` is relative, cannot contain `..`, and cannot contain `hush.security`.
 - Reserved env name prefixes `_HUSH` and `__HUSH` are rejected.
