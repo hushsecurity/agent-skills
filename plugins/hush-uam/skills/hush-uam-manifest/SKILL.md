@@ -34,6 +34,16 @@ For privilege types with very large enumerated value lists, additional reference
 
 The per-type file points you to these when needed.
 
+## Compatibility
+
+The skill targets the **current** hush-uam and `hush-am` helm chart releases. Everything in the schema and reference files works against any reasonably recent installation, with one exception: a small number of fields were added in specific versions, listed below. If a manifest you generate uses one of these fields against a cluster running an older version, the CRD will reject the field at apply time.
+
+| Feature                                  | Min hush-uam | Min `hush-am` chart |
+| ---------------------------------------- | ------------ | ------------------- |
+| `remoteName` + `type` cred/privilege ref | v0.11.0      | 0.16.0              |
+
+Older clusters can still use everything else in the skill — `name`/`id` refs, every credential type, every delivery mode. The version question is per-feature, not per-skill.
+
 ## Inputs to confirm before generating
 
 Walk through these with the user in this order. Skip the items that don't apply to the artifacts being generated.
@@ -76,6 +86,9 @@ The order below is grouped by resource. Within each resource, structural choices
   - Single resource (`AccessCredential` only / `AccessPrivilege` only / `AccessPolicy` only)
 
   Don't auto-assume the trio. The user might already have the cred and privilege managed via Hush API/UI/Terraform and only want a policy CR to wire attestation + delivery for a specific workload. If they pick "policy only" or "cred + policy", remember to ask how the unowned references should be expressed: `name` (CR in `hush-security`), `id` (managed externally), or `remoteName` + `type` (managed externally, referred to by its Hush UAM display name) — see "Referencing credentials and privileges".
+- **Installed versions** — *conditional, optional.* Ask only when the scope answer implies externally-managed refs (`AccessPolicy` only, `AccessCredential + AccessPolicy`, or a single-resource policy that references existing externals). Skip for the fresh-trio path — every ref will be `name`, so the version doesn't change anything. Present a single `AskUserQuestion` with options like `Latest (Recommended)`, `Older — I'll tell you the versions`, prompting for **hush-uam** version and **`hush-am` chart** version when the user picks "older". Behaviour:
+  - **Latest / unanswered / hush-uam ≥ v0.11.0 and chart ≥ 0.16.0** → offer all three ref forms (`name`/`id`/`remoteName`+`type`). Still emit the version requirement in the post-manifest note as a sanity check.
+  - **hush-uam < v0.11.0 OR chart < 0.16.0** → drop `remoteName` from the ref-form options; only offer `name`/`id`. Append a one-line tip after the manifest: "upgrade to hush-uam ≥ v0.11.0 and chart ≥ 0.16.0 to also reference externals by display name (`remoteName` + `type`)."
 - **Type** — `postgres`, `gemini`, `aws_access_key`, etc. Skip if implied by the prompt.
 
 #### 1. Policy (skip if no policy is being generated)
@@ -240,7 +253,7 @@ All other policy fields (`accessCredentialRef`, `accessPrivilegeRefs`, `attestat
 
 1. **`name`** — when the credential or privilege is also being managed in Kubernetes as a CR in the same namespace. The operator resolves it to its underlying ID.
 2. **`id`** — when the credential or privilege was created outside Kubernetes (e.g. via the Hush API or UI) and exists only on the platform side, not as a CR. Use this when the user has the platform ID handy.
-3. **`remoteName` + `type`** — when the credential or privilege was created outside Kubernetes and the user only knows it by its display name on the platform. The api-controller resolves the `remoteName`/`type` pair to an ID via Hush UAM within the deployment's scope. `type` is required here to disambiguate (e.g. `postgres`, `gemini`, `plaintext`, etc.).
+3. **`remoteName` + `type`** — when the credential or privilege was created outside Kubernetes and the user only knows it by its display name on the platform. The api-controller resolves the `remoteName`/`type` pair to an ID via Hush UAM within the deployment's scope. `type` is required here to disambiguate (e.g. `postgres`, `gemini`, `plaintext`, etc.). **Requires:** hush-uam ≥ v0.11.0, helm chart `hush-am` ≥ 0.16.0 — older clusters' CRDs reject this field. See the [Compatibility](#compatibility) section.
 
 You can mix the three forms freely within a single policy — e.g. reference the credential by `name` (CR in this namespace) and the privilege by `remoteName` + `type` (managed externally, only known by name).
 
@@ -497,12 +510,17 @@ When a new credential type is added to Hush, add a new `references/<type>.md` fo
 6. **Assemble the manifest** with explicit `apiVersion`/`kind`/`metadata.namespace: hush-security`. Default to multi-document YAML (`---` separator) when generating cred + privilege + policy together. Companion `Secret` documents must also live in `hush-security` so the operator can read them.
 7. **For sensitive fields**, generate a `kind: Secret` document alongside the credential, or note that the user must run `kubectl create secret generic <name> --from-literal=<key>=<value>` first.
 8. **Surface the required auth-principal permissions** for the credential's target system. After the manifest, print a clearly-labeled **"Required permissions on the auth principal"** block listing what the GCP SA / IAM role / DB user / API token needs in order for Hush to provision and rotate ephemeral credentials. Pull the list from `references/<type>.md` — every per-type file has a "Required permissions on the auth principal" section. If the per-type file lacks one or marks it "not applicable", say so explicitly to the user — don't invent permissions.
-9. **If the manifest uses `remoteName`**, append a short post-manifest warning: the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error. Ask the user to confirm uniqueness before applying.
+9. **If the manifest uses `remoteName`**, append a short post-manifest note covering both compatibility and uniqueness:
+   - **Version floor** — the cluster must be running hush-uam ≥ v0.11.0 and helm chart `hush-am` ≥ 0.16.0; older CRDs reject the `remoteName` field at apply time.
+   - **Uniqueness** — the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error.
+
+   Ask the user to confirm both before applying. (If the version probe in step 0 already established the cluster is on a recent release, you can shorten the version note to a brief reminder.)
 
 # Validation gotchas
 
 - `accessCredentialRef` and each entry of `accessPrivilegeRefs` accept exactly one of `name`, `id`, or `remoteName`+`type` (never two of these, never none). When using `remoteName` it must be paired with `type`.
 - `remoteName` + `type` is resolved at reconcile time; if multiple remote entities share that name and type within the deployment, the policy status turns to **error**. Flag this to the user when you emit a `remoteName` reference.
+- `remoteName` is only accepted by **hush-uam ≥ v0.11.0** / **chart `hush-am` ≥ 0.16.0**; older CRDs reject the field at apply time. See the [Compatibility](#compatibility) section.
 - `attestationCriteria.key` is required iff `type: k8s:pod-label`; it must be omitted for the other criterion types.
 - Delivery item names: env uses `^[a-zA-Z_][a-zA-Z0-9_]*$`; sdk uses `^[a-zA-Z0-9/_+=.@-]+$`; volume `path` is relative, cannot contain `..`, and cannot contain `hush.security`.
 - Reserved env name prefixes `_HUSH` and `__HUSH` are rejected.
