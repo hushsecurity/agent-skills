@@ -6,15 +6,15 @@ Static key-value credential — multiple named secret values. **No privilege typ
 
 ```yaml
 config:
-  items:
-    - key: <name1>             # pattern: ^[a-zA-Z0-9_]{1,64}$; cannot start with _hush or __hush
-    - key: <name2>
+  keys:
+    - <name1>                  # pattern: ^[a-zA-Z0-9_]{1,64}$; cannot start with _hush or __hush
+    - <name2>
 secretRef:
   name: <k8s-secret>
-  # canonical keys: one per items[].key
+  # canonical keys: one per config.keys[] entry
 ```
 
-`secretRef` keys: keys named after each `items[].key`; values are the per-item secret strings.
+`secretRef` keys: keys named after each entry in `config.keys`; values are the per-key secret strings.
 
 ## Privilege
 

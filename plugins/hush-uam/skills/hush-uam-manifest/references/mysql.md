@@ -10,7 +10,7 @@ config:
   host: <hostname>
   port: 3306                  # default
   username: <root-username>
-  ssl_mode: PREFERRED         # default
+  ssl_mode: preferred         # default; one of: disabled, preferred, required, verify-ca, verify-identity
   ssl_ca: <optional-pem>
 secretRef:
   name: <k8s-secret>

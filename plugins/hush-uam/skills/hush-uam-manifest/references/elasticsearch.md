@@ -7,9 +7,9 @@ Elasticsearch credentials and privileges. Dynamic credentials — provisions eph
 ```yaml
 config:
   host: <hostname>
-  port: 9200                  # default
+  port: 9200                  # required (no implicit default; 9200 is Elasticsearch's standard port)
   username: <root-username>   # optional (basic auth)
-  tls: false                  # default
+  tls: true                   # required (true/false; no implicit default)
   tls_ca: <optional-pem>
 secretRef:
   name: <k8s-secret>

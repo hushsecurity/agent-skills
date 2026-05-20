@@ -12,15 +12,15 @@ config:
   schema: PUBLIC              # default
   role: <optional-role>
   username: <root-username>
-  auth_method: password       # or "key_pair"
+  auth_method: password       # or "key-pair"
 secretRef:
   name: <k8s-secret>
   # canonical key depends on auth_method:
   #   password (auth_method=password)
-  #   private_key (auth_method=key_pair)
+  #   private_key (auth_method=key-pair)
 ```
 
-`secretRef` keys: `password` when `auth_method=password`; `private_key` when `auth_method=key_pair`.
+`secretRef` keys: `password` when `auth_method=password`; `private_key` when `auth_method=key-pair`.
 
 ## Privilege
 
@@ -54,4 +54,4 @@ The user's active role must have:
 snowflake://${username}@${account}/${database}/${schema}?warehouse=${warehouse}&role=${role}
 ```
 
-For `auth_method: key_pair`, `${password}` won't resolve — use a separate item or omit credential auth from the connection string.
+For `auth_method: key-pair`, `${password}` won't resolve — use a separate item or omit credential auth from the connection string.
