@@ -8,6 +8,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 _Nothing yet._
 
+## [hush-uam-v0.2.0] - 2026-05-20
+
+Tracks `am.hush.security/v1alpha1` as shipped in hush-uam ≥ v0.11.0 / helm chart `hush-am` ≥ 0.16.0.
+
+### Added
+
+- Support `remoteName` + `type` as a third form for `accessCredentialRef` and `accessPrivilegeRefs`, alongside the existing `name` and `id` forms. Resolves an externally-managed credential or privilege by its Hush UAM display name. Requires hush-uam ≥ v0.11.0 and helm chart `hush-am` ≥ 0.16.0.
+- `## Compatibility` section in `SKILL.md` with a per-feature version-floor table, plus a conditional installed-versions probe in the input flow: when the user reports an older cluster, the skill drops `remoteName` from the offered ref forms and emits an "upgrade to unlock" tip.
+- Post-manifest warning when `remoteName` is used, covering both the version floor and the name+type uniqueness requirement (ambiguous resolution turns the policy status to `error`).
+
+### Fixed
+
+- `plaintext` credentials no longer emit an empty `config: {}` block — the type has no `config` fields, so the key should be omitted entirely.
+- `mysql` / `mariadb`: `ssl_mode` enum values are now the lowercase-hyphenated wire form (`disabled`, `preferred`, `required`, `verify-ca`, `verify-identity`) instead of the uppercase Python enum names — the backing enum is `HyphenatedStrEnum`.
+- `snowflake`: `auth_method` value `key-pair` (hyphenated) instead of `key_pair` — same `HyphenatedStrEnum` rule. Connection-string-template note updated to match.
+- `kv`: config field is `keys: List[str]` (flat string list), not `items: [{key: <name>}]`. The previous shape would have been rejected by the Pydantic model.
+- `elasticsearch`: `port` and `tls` are required (no Pydantic defaults); they were previously labeled `# default` and `tls` was emitted as `false`, which is a poor production recommendation. Now labeled as required with `tls: true` shown in the example.
+
 ## [hush-uam-v0.1.0] - 2026-05-10
 
 Initial public release of the `hush-uam` plugin. Tracks operator API version `am.hush.security/v1alpha1`.
@@ -22,5 +40,6 @@ Initial public release of the `hush-uam` plugin. Tracks operator API version `am
 - Resource-grouped, policy-first structured input flow via `AskUserQuestion`.
 - Cursor wrapper at `tools/cursor/hush-uam/` generated from canonical content by `scripts/sync-tools.sh`.
 
-[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.1.0...HEAD
+[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.2.0...HEAD
+[hush-uam-v0.2.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.2.0
 [hush-uam-v0.1.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.1.0
