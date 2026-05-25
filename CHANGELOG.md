@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- `temporal_cloud` credential type — dynamic credential that provisions ephemeral Temporal Cloud API keys via an admin API key supplied through `secretRef.api_key` (no `config` block on the credential). Matching `temporal_cloud` privilege type with `grants[]` of `{namespace, permission}` where `permission` is one of `read`, `write`, `admin` and namespaces must be unique. New `references/temporal_cloud.md` reference file and catalog entry in `SKILL.md`.
 
 ## [hush-uam-v0.2.0] - 2026-05-20
 

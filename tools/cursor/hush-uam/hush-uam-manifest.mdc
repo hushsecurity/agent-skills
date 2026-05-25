@@ -565,6 +565,7 @@ Each supported credential type has its own reference file in `references/<type>.
 | `salesforce` | yes | [`references/salesforce.md`](references/salesforce.md) | |
 | `sendgrid` | yes | [`references/sendgrid.md`](references/sendgrid.md) | + see `references/sendgrid-scopes.md` |
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + see `references/twilio-permissions.md` |
+| `temporal_cloud` | yes | [`references/temporal_cloud.md`](references/temporal_cloud.md) | Workflow engine; no `config` block, admin API key in `secretRef` |
 | `aws_wif` | **no** | [`references/aws_wif.md`](references/aws_wif.md) | Federation |
 | `gcp_wif` | **no** | [`references/gcp_wif.md`](references/gcp_wif.md) | Federation |
 | `azure_wif` | **no** | [`references/azure_wif.md`](references/azure_wif.md) | Federation |
