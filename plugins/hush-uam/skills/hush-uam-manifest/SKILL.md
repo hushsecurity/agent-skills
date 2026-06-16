@@ -114,7 +114,7 @@ Walk the user through every policy decision before touching the credential.
 All credential decisions in one block — structural choices, field values, and secret strategy.
 
 - **Credential CR name** — default to `<type>-<env>` style (e.g. `gemini-prod`, `pg-prod`).
-- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache` for `redis`, `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
+- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache` for `redis`, `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
 - **Field values** — all required non-sensitive fields the type expects. For `postgres`: `host`, `port`, `db_name`, `ssl_mode`, `username`. Pull the per-type field list and defaults from `references/<type>.md`. Volunteer defaults inline ("port — default 5432") to keep the conversation tight.
 - **Secret source** (skip if the type has no `secretRef`).
   - Existing Secret or generate alongside? Default to `secretRef` over inlining.
@@ -477,6 +477,7 @@ Each supported credential type has its own reference file in `references/<type>.
 | `sendgrid` | yes | [`references/sendgrid.md`](references/sendgrid.md) | + see `references/sendgrid-scopes.md` |
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + see `references/twilio-permissions.md` |
 | `temporal_cloud` | yes | [`references/temporal_cloud.md`](references/temporal_cloud.md) | Workflow engine; no `config` block, admin API key in `secretRef` |
+| `kafka` | yes | [`references/kafka.md`](references/kafka.md) | Messaging; `native` or `aiven` engine (`config.engine`, fixed at create) |
 | `aws_wif` | **no** | [`references/aws_wif.md`](references/aws_wif.md) | Federation |
 | `gcp_wif` | **no** | [`references/gcp_wif.md`](references/gcp_wif.md) | Federation |
 | `azure_wif` | **no** | [`references/azure_wif.md`](references/azure_wif.md) | Federation |

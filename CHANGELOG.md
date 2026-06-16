@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- `kafka` credential type — dynamic credential that provisions an ephemeral per-workload Kafka user and ACLs. Two engines selected by the `config.engine` field (fixed at create): `native` (self-hosted brokers; admin SASL user via `secretRef.password`, with `bootstrap_servers`/`sasl_mechanism`/`tls`/`tls_ca`) and `aiven` (Aiven-managed service; API token via `secretRef.token`, with `project`/`service_name`). Each engine accepts only its own fields, enforced per-engine at the API. Matching `kafka` privilege type with `acls[]` of `{resource_type, resource_name, pattern_type, operation, permission_type, host}` (`pattern_type` is one of `LITERAL`/`PREFIXED`, `permission_type` is one of `ALLOW`/`DENY`; consumer/producer/full-access presets documented). New `references/kafka.md` reference file and catalog entry in `SKILL.md`.
 - `temporal_cloud` credential type — dynamic credential that provisions ephemeral Temporal Cloud API keys via an admin API key supplied through `secretRef.api_key` (no `config` block on the credential). Matching `temporal_cloud` privilege type with `grants[]` of `{namespace, permission}` where `permission` is one of `read`, `write`, `admin` and namespaces must be unique. New `references/temporal_cloud.md` reference file and catalog entry in `SKILL.md`.
 
 ## [hush-uam-v0.2.0] - 2026-05-20
