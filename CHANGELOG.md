@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- `rabbitmq` credential: `config.auto_rotate_root` flag (boolean, default `false`). When `true`, Hush periodically rotates the root/admin credential itself (the `password` in `secretRef`), not just the ephemeral per-workload users; the rotation interval is 30 days. RabbitMQ is currently the only credential type that supports root rotation. Documented in `references/rabbitmq.md` (and the cursor mirror).
 
 ## [hush-uam-v0.3.0] - 2026-06-22
 
