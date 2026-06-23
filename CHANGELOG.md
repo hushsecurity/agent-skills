@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [hush-uam-v0.3.0] - 2026-06-22
+
 ### Added
 
 - `kafka` credential type — dynamic credential that provisions an ephemeral per-workload Kafka user and ACLs. Two engines selected by the `config.engine` field (fixed at create): `native` (self-hosted brokers; admin SASL user via `secretRef.password`, with `bootstrap_servers`/`sasl_mechanism`/`tls`/`tls_ca`) and `aiven` (Aiven-managed service; API token via `secretRef.token`, with `project`/`service_name`). Each engine accepts only its own fields, enforced per-engine at the API. Matching `kafka` privilege type with `acls[]` of `{resource_type, resource_name, pattern_type, operation, permission_type, host}` (`pattern_type` is one of `LITERAL`/`PREFIXED`, `permission_type` is one of `ALLOW`/`DENY`; consumer/producer/full-access presets documented). New `references/kafka.md` reference file and catalog entry in `SKILL.md`.
@@ -43,6 +47,7 @@ Initial public release of the `hush-uam` plugin. Tracks operator API version `am
 - Resource-grouped, policy-first structured input flow via `AskUserQuestion`.
 - Cursor wrapper at `tools/cursor/hush-uam/` generated from canonical content by `scripts/sync-tools.sh`.
 
-[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.2.0...HEAD
+[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.3.0...HEAD
+[hush-uam-v0.3.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.3.0
 [hush-uam-v0.2.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.2.0
 [hush-uam-v0.1.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.1.0
