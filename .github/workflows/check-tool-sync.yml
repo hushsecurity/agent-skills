@@ -10,6 +10,6 @@ jobs:
   check-sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Verify tools/ matches canonical
         run: bash scripts/sync-tools.sh --check
