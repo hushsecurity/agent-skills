@@ -114,7 +114,7 @@ Walk the user through every policy decision before touching the credential.
 All credential decisions in one block — structural choices, field values, and secret strategy.
 
 - **Credential CR name** — default to `<type>-<env>` style (e.g. `gemini-prod`, `pg-prod`).
-- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache` for `redis`, `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
+- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache|aiven` for `redis` (immutable after create; `elasticache` needs `cache_engine: redis|valkey`, `aiven` needs `project`+`service_name` and takes no `cache_engine`), `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
 - **Field values** — all required non-sensitive fields the type expects. For `postgres`: `host`, `port`, `db_name`, `ssl_mode`, `username`. Pull the per-type field list and defaults from `references/<type>.md`. Volunteer defaults inline ("port — default 5432") to keep the conversation tight.
 - **Secret source** (skip if the type has no `secretRef`).
   - Existing Secret or generate alongside? Default to `secretRef` over inlining.
@@ -437,6 +437,7 @@ Notes:
 - For `mongodb_atlas`, `username`/`password` are auto-generated (Atlas does not take user-supplied DB credentials), so they're available in templates even though they're not in the credential's `config`.
 - For `snowflake` with `auth_method: key_pair`, the `${password}` placeholder won't resolve — use a separate item or omit credential auth from the connection string.
 - For `redis` with `engine: elasticache`, the `${password}` placeholder is unavailable (ElastiCache uses AWS auth) — adjust the template accordingly.
+- For `redis` with `engine: aiven`, `${username}`/`${password}`/`${host}`/`${port}` are auto-generated / resolved by Hush and available in templates, but there is no `${database}` (no selectable DB) — drop it from the connection string.
 
 ---
 
@@ -459,7 +460,7 @@ Each supported credential type has its own reference file in `references/<type>.
 | `mariadb` | yes | [`references/mariadb.md`](references/mariadb.md) | DB |
 | `mongodb` | yes | [`references/mongodb.md`](references/mongodb.md) | DB |
 | `mongodb_atlas` | yes | [`references/mongodb_atlas.md`](references/mongodb_atlas.md) | DB; OAuth or API Key auth |
-| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; redis or elasticache engine |
+| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, or `aiven` engine (`config.engine`, fixed at create) |
 | `elasticsearch` | yes | [`references/elasticsearch.md`](references/elasticsearch.md) | Search |
 | `rabbitmq` | yes | [`references/rabbitmq.md`](references/rabbitmq.md) | Messaging |
 | `snowflake` | yes | [`references/snowflake.md`](references/snowflake.md) | Data warehouse; password or key_pair auth |
