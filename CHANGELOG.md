@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- `redis` credential: `aiven` engine (`config.engine: aiven`) alongside the existing `redis` and `elasticache` engines. An Aiven-managed Valkey service — authenticated with an Aiven REST API token via `secretRef.token`, addressed by `project` + `service_name`. Hush resolves the host/port and mints the user via the Aiven API, so none of the redis/elasticache connection or auth fields (`host`, `port`, `password`, `username`, `database`, `tls`, `tls_ca`, `cache_engine`, and the ElastiCache fields) may be set; `cache_engine` in particular is not taken (Hush resolves the valkey-family variant from the live service). `engine` is fixed at create. The `elasticache` engine now validates `cache_engine` against `redis`/`valkey`. Redis privilege `keys`/`channels` entries must each be a single whitespace-free token. Documented in `references/redis.md` (and the cursor mirror); `SKILL.md` catalog, structural-decisions, and connection-string notes updated.
+
 - `rabbitmq` credential: `config.auto_rotate_root` flag (boolean, default `false`). When `true`, Hush periodically rotates the root/admin credential itself (the `password` in `secretRef`), not just the ephemeral per-workload users; the rotation interval is 30 days. RabbitMQ is currently the only credential type that supports root rotation. Documented in `references/rabbitmq.md` (and the cursor mirror).
 
 ## [hush-uam-v0.3.0] - 2026-06-22
