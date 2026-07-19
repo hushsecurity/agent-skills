@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [hush-uam-v0.4.0] - 2026-07-13
+
 ### Added
 
 - `redis` credential: `aiven` engine (`config.engine: aiven`) alongside the existing `redis` and `elasticache` engines. An Aiven-managed Valkey service — authenticated with an Aiven REST API token via `secretRef.token`, addressed by `project` + `service_name`. Hush resolves the host/port and mints the user via the Aiven API, so none of the redis/elasticache connection or auth fields (`host`, `port`, `password`, `username`, `database`, `tls`, `tls_ca`, `cache_engine`, and the ElastiCache fields) may be set; `cache_engine` in particular is not taken (Hush resolves the valkey-family variant from the live service). `engine` is fixed at create. The `elasticache` engine now validates `cache_engine` against `redis`/`valkey`. Redis privilege `keys`/`channels` entries must each be a single whitespace-free token. Documented in `references/redis.md` (and the cursor mirror); `SKILL.md` catalog, structural-decisions, and connection-string notes updated.
@@ -51,7 +55,8 @@ Initial public release of the `hush-uam` plugin. Tracks operator API version `am
 - Resource-grouped, policy-first structured input flow via `AskUserQuestion`.
 - Cursor wrapper at `tools/cursor/hush-uam/` generated from canonical content by `scripts/sync-tools.sh`.
 
-[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.3.0...HEAD
+[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.4.0...HEAD
+[hush-uam-v0.4.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.4.0
 [hush-uam-v0.3.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.3.0
 [hush-uam-v0.2.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.2.0
 [hush-uam-v0.1.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.1.0
