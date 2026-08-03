@@ -1,6 +1,6 @@
 # kafka
 
-Kafka credentials and privileges. Dynamic credentials — provisions an ephemeral per-workload Kafka user (one principal per credential rotation) and grants it the requested ACLs.
+Kafka credentials and privileges. Dynamic credentials — provisions an ephemeral per-workload Kafka user (one principal per credential rotation) and grants it the requested ACLs. Requires hush-uam ≥ v0.15.0.
 
 Two backends, selected by `config.engine`:
 
