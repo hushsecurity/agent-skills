@@ -41,11 +41,14 @@ The skill targets the **current** hush-uam and `hush-am` helm chart releases. Ev
 - **Gated fields** (`remoteName`) fail at **apply** time. The CRD doesn't know the field, so `kubectl apply` itself errors. The skill can avoid this by offering a different manifest shape.
 - **Gated `type`/`engine` values** fail at **reconcile** time. These are values inside fields the CRD already accepts, so `kubectl apply` *succeeds* and the Hush API rejects the create afterwards with a version error. There is no alternative manifest shape here — the user asked for that backend — so generate what they asked for and warn.
 
-| Feature                                  | Min hush-uam | Min `hush-am` chart |
-| ---------------------------------------- | ------------ | ------------------- |
-| `remoteName` + `type` cred/privilege ref | v0.11.0      | 0.16.0              |
-| `kafka` credential type                  | v0.15.0      | 0.19.0              |
-| `redis` engine `aiven`                   | v0.17.0      | 0.21.0              |
+| Feature                                  | Min hush-uam           | Min `hush-am` chart |
+| ---------------------------------------- | ---------------------- | ------------------- |
+| `remoteName` + `type` cred/privilege ref | v0.11.0                | 0.16.0              |
+| `kafka` credential type                  | v0.15.0                | 0.19.0              |
+| `redis` engine `aiven`                   | v0.17.0                | 0.21.0              |
+| `redis` engine `azure_managed_redis`     | v0.18.0 _(unreleased)_ | _unreleased_        |
+
+`azure_managed_redis` requires a hush-uam release that is **not out yet** — no cluster satisfies this floor today, so "the cluster is on the latest release" is not enough. Warn the user before generating one.
 
 Older clusters can still use everything else in the skill — `name`/`id` refs, every delivery mode, and every credential type not listed above. The version question is per-feature, not per-skill.
 
@@ -119,8 +122,8 @@ Walk the user through every policy decision before touching the credential.
 All credential decisions in one block — structural choices, field values, and secret strategy.
 
 - **Credential CR name** — default to `<type>-<env>` style (e.g. `gemini-prod`, `pg-prod`).
-- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache|aiven` for `redis` (immutable after create; `elasticache` needs `cache_engine: redis|valkey`, `aiven` needs `project`+`service_name` and takes no `cache_engine`), `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
-- **Version floor** — *conditional.* If the chosen type or engine has a row in [Compatibility](#compatibility) (`kafka`, `redis` engine `aiven`), raise it here, immediately after the structural choice — this is the first point in the flow where the type *and* engine are both known, which is why the step-0 probe can't cover it. State the floor and ask whether the cluster meets it. Unlike `remoteName`, these are values inside fields the CRD already accepts, so you cannot resolve a shortfall by offering a different manifest shape: **never drop the user's chosen type or engine.** Generate what they asked for and carry the floor into the post-manifest note (step 9).
+- **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache|aiven|azure_managed_redis` for `redis` (immutable after create; `elasticache` needs `cache_engine: redis|valkey`, `aiven` needs `project`+`service_name` and takes no `cache_engine`, `azure_managed_redis` needs `tenant_id`+`subscription_id`+`resource_group`+`cluster_name` and takes no connection fields at all), `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
+- **Version floor** — *conditional.* If the chosen type or engine has a row in [Compatibility](#compatibility) (`kafka`, `redis` engine `aiven`, `redis` engine `azure_managed_redis`), raise it here, immediately after the structural choice — this is the first point in the flow where the type *and* engine are both known, which is why the step-0 probe can't cover it. State the floor and ask whether the cluster meets it. Unlike `remoteName`, these are values inside fields the CRD already accepts, so you cannot resolve a shortfall by offering a different manifest shape: **never drop the user's chosen type or engine.** Generate what they asked for and carry the floor into the post-manifest note (step 9). For a floor marked _unreleased_ (`azure_managed_redis`), don't ask — no release satisfies it, so state plainly that the credential will fail at reconcile until one ships, and confirm the user still wants the manifest.
 - **Field values** — all required non-sensitive fields the type expects. For `postgres`: `host`, `port`, `db_name`, `ssl_mode`, `username`. Pull the per-type field list and defaults from `references/<type>.md`. Volunteer defaults inline ("port — default 5432") to keep the conversation tight.
 - **Secret source** (skip if the type has no `secretRef`).
   - Existing Secret or generate alongside? Default to `secretRef` over inlining.
@@ -444,6 +447,7 @@ Notes:
 - For `snowflake` with `auth_method: key_pair`, the `${password}` placeholder won't resolve — use a separate item or omit credential auth from the connection string.
 - For `redis` with `engine: elasticache`, the `${password}` placeholder is unavailable (ElastiCache uses AWS auth) — adjust the template accordingly.
 - For `redis` with `engine: aiven`, `${username}`/`${password}`/`${host}`/`${port}` are auto-generated / resolved by Hush and available in templates, but there is no `${database}` (no selectable DB) — drop it from the connection string.
+- For `redis` with `engine: azure_managed_redis`, **do not use a connection string at all.** There is no `${password}` — the workload authenticates with an Entra token it fetches itself. Deliver split items instead (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `REDIS_USERNAME`, `REDIS_HOST`, `REDIS_PORT`); see the delivery notes in [`references/redis.md`](references/redis.md).
 
 ---
 
@@ -466,7 +470,7 @@ Each supported credential type has its own reference file in `references/<type>.
 | `mariadb` | yes | [`references/mariadb.md`](references/mariadb.md) | DB |
 | `mongodb` | yes | [`references/mongodb.md`](references/mongodb.md) | DB |
 | `mongodb_atlas` | yes | [`references/mongodb_atlas.md`](references/mongodb_atlas.md) | DB; OAuth or API Key auth |
-| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, or `aiven` engine (`config.engine`, fixed at create) |
+| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, `aiven`, or `azure_managed_redis` engine (`config.engine`, fixed at create) |
 | `elasticsearch` | yes | [`references/elasticsearch.md`](references/elasticsearch.md) | Search |
 | `rabbitmq` | yes | [`references/rabbitmq.md`](references/rabbitmq.md) | Messaging |
 | `snowflake` | yes | [`references/snowflake.md`](references/snowflake.md) | Data warehouse; password or key_pair auth |
@@ -521,7 +525,8 @@ When a new credential type is added to Hush, add a new `references/<type>.md` fo
 8. **Surface the required auth-principal permissions** for the credential's target system. After the manifest, print a clearly-labeled **"Required permissions on the auth principal"** block listing what the GCP SA / IAM role / DB user / API token needs in order for Hush to provision and rotate ephemeral credentials. Pull the list from `references/<type>.md` — every per-type file has a "Required permissions on the auth principal" section. If the per-type file lacks one or marks it "not applicable", say so explicitly to the user — don't invent permissions.
 9. **If the manifest uses any version-gated feature** (see [Compatibility](#compatibility)), append a short post-manifest version note naming the feature and its floor:
    - **`remoteName` ref form** — the cluster must be running hush-uam ≥ v0.11.0 and helm chart `hush-am` ≥ 0.16.0; older CRDs reject the `remoteName` field at **apply** time.
-   - **Gated `type`/`engine` values** (`kafka`, `redis` engine `aiven`) — the CRD accepts these, so `kubectl apply` succeeds and the Hush API rejects the create afterwards at **reconcile** time with a version error. Say this explicitly, so a clean apply isn't mistaken for success.
+   - **Gated `type`/`engine` values** (`kafka`, `redis` engine `aiven`, `redis` engine `azure_managed_redis`) — the CRD accepts these, so `kubectl apply` succeeds and the Hush API rejects the create afterwards at **reconcile** time with a version error. Say this explicitly, so a clean apply isn't mistaken for success.
+   - **`redis` engine `azure_managed_redis`** specifically — hush-uam v0.18.0 is **not released yet**, so lead with that: the manifest cannot work on any cluster today.
 
    Additionally, **if the manifest uses `remoteName`**, cover uniqueness in the same note: the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error.
 
