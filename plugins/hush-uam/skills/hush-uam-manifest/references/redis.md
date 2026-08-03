@@ -108,6 +108,16 @@ None of the redis/elasticache/aiven fields (`host`, `port`, `password`, `usernam
 
 `secretRef` keys: `client_secret` (only when `client_id` is set).
 
+## Adding an engine (maintainers)
+
+Field exclusivity is stated per engine above, in one of two styles, and the choice is deliberate: `redis` and `elasticache` describe the fields they exclude in prose ("Aiven- or Azure-only fields"), while `aiven` and `azure_managed_redis` enumerate every excluded field by name. The enumeration exists where it earns its cost — those two engines resolve the endpoint themselves, and a model writing *any* redis credential has a strong prior that it needs a `host` and `port`, so the section has to say outright that it must not supply them.
+
+So when adding an engine here:
+
+- **If Hush resolves the endpoint for it, enumerate the common connection fields as forbidden** — `host`, `port`, `password`, `username`, `database`, `tls`, `tls_ca` — plus the other engines' own fields. Omitting them is the one gap that actually misleads: the skill will invent a `host` for an engine that takes none. Prose alone is not enough for this class of engine.
+- If it takes a `host` like `redis`/`elasticache` do, prose naming the other engines' field groups is sufficient. Nothing prompts a model to add `tenant_id` to a host-based credential.
+- Update the sibling sections' exclusion lists with the new engine's fields, add the engine to the backend list at the top of this file, and record any version floor in the `## Compatibility` table in `SKILL.md`.
+
 ## Privilege
 
 ```yaml
