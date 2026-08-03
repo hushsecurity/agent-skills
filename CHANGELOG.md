@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+
+- `SKILL.md` `## Compatibility`: version floors for the type- and engine-level features that were previously unrecorded — `kafka` credential type (hush-uam v0.15.0 / chart 0.19.0) and `redis` engine `aiven` (v0.17.0 / 0.21.0) — plus the input-flow wiring that acts on them. These floors are enforced by the Hush API at reconcile time, not by the CRD at apply time, so `kubectl apply` succeeds and the create fails afterwards with a version error; the section now distinguishes the two failure modes explicitly. The step-0 version probe only ever covered the `remoteName` ref form and is skipped on the fresh-trio path, which is exactly where a type/engine floor applies, so the floor check now lives in the credential block (step 2) where the type and engine are both known, and the post-manifest note (step 9) is no longer gated on `remoteName`. A shortfall never causes the chosen type/engine to be dropped — unlike `remoteName` there is no alternative manifest shape — it is generated and warned about. Floors also noted in `references/kafka.md` and `references/redis.md`, and "Adding a new type" now points at the Compatibility table.
 
 ## [hush-uam-v0.4.0] - 2026-07-13
 

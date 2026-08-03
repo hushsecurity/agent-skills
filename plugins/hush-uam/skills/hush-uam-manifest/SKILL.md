@@ -36,13 +36,18 @@ The per-type file points you to these when needed.
 
 ## Compatibility
 
-The skill targets the **current** hush-uam and `hush-am` helm chart releases. Everything in the schema and reference files works against any reasonably recent installation, with one exception: a small number of fields were added in specific versions, listed below. If a manifest you generate uses one of these fields against a cluster running an older version, the CRD will reject the field at apply time.
+The skill targets the **current** hush-uam and `hush-am` helm chart releases. Everything in the schema and reference files works against any reasonably recent installation, with one exception: a small number of features were added in specific versions, listed below. If a manifest you generate uses one of these against a cluster running an older version, it will be rejected — but **the two kinds of floor fail at different times**, which changes what you tell the user:
+
+- **Gated fields** (`remoteName`) fail at **apply** time. The CRD doesn't know the field, so `kubectl apply` itself errors. The skill can avoid this by offering a different manifest shape.
+- **Gated `type`/`engine` values** fail at **reconcile** time. These are values inside fields the CRD already accepts, so `kubectl apply` *succeeds* and the Hush API rejects the create afterwards with a version error. There is no alternative manifest shape here — the user asked for that backend — so generate what they asked for and warn.
 
 | Feature                                  | Min hush-uam | Min `hush-am` chart |
 | ---------------------------------------- | ------------ | ------------------- |
 | `remoteName` + `type` cred/privilege ref | v0.11.0      | 0.16.0              |
+| `kafka` credential type                  | v0.15.0      | 0.19.0              |
+| `redis` engine `aiven`                   | v0.17.0      | 0.21.0              |
 
-Older clusters can still use everything else in the skill — `name`/`id` refs, every credential type, every delivery mode. The version question is per-feature, not per-skill.
+Older clusters can still use everything else in the skill — `name`/`id` refs, every delivery mode, and every credential type not listed above. The version question is per-feature, not per-skill.
 
 ## Inputs to confirm before generating
 
@@ -86,7 +91,7 @@ The order below is grouped by resource. Within each resource, structural choices
   - Single resource (`AccessCredential` only / `AccessPrivilege` only / `AccessPolicy` only)
 
   Don't auto-assume the trio. The user might already have the cred and privilege managed via Hush API/UI/Terraform and only want a policy CR to wire attestation + delivery for a specific workload. If they pick "policy only" or "cred + policy", remember to ask how the unowned references should be expressed: `name` (CR in `hush-security`), `id` (managed externally), or `remoteName` + `type` (managed externally, referred to by its Hush UAM display name) — see "Referencing credentials and privileges".
-- **Installed versions** — *conditional, optional.* Ask only when the scope answer implies externally-managed refs (`AccessPolicy` only, `AccessCredential + AccessPolicy`, or a single-resource policy that references existing externals). Skip for the fresh-trio path — every ref will be `name`, so the version doesn't change anything. Present a single `AskUserQuestion` with options like `Latest (Recommended)`, `Older — I'll tell you the versions`, prompting for **hush-uam** version and **`hush-am` chart** version when the user picks "older". Behaviour:
+- **Installed versions** — *conditional, optional.* Ask only when the scope answer implies externally-managed refs (`AccessPolicy` only, `AccessCredential + AccessPolicy`, or a single-resource policy that references existing externals). Skip for the fresh-trio path — every ref will be `name`, so no *ref form* depends on the version. This probe covers the `remoteName` ref form only; type- and engine-level floors are checked in step 2, where the chosen type and engine are actually known. Present a single `AskUserQuestion` with options like `Latest (Recommended)`, `Older — I'll tell you the versions`, prompting for **hush-uam** version and **`hush-am` chart** version when the user picks "older". Behaviour:
   - **Latest / unanswered / hush-uam ≥ v0.11.0 and chart ≥ 0.16.0** → offer all three ref forms (`name`/`id`/`remoteName`+`type`). Still emit the version requirement in the post-manifest note as a sanity check.
   - **hush-uam < v0.11.0 OR chart < 0.16.0** → drop `remoteName` from the ref-form options; only offer `name`/`id`. Append a one-line tip after the manifest: "upgrade to hush-uam ≥ v0.11.0 and chart ≥ 0.16.0 to also reference externals by display name (`remoteName` + `type`)."
 - **Type** — `postgres`, `gemini`, `aws_access_key`, etc. Skip if implied by the prompt.
@@ -115,6 +120,7 @@ All credential decisions in one block — structural choices, field values, and 
 
 - **Credential CR name** — default to `<type>-<env>` style (e.g. `gemini-prod`, `pg-prod`).
 - **Type-specific structural decisions** (only applicable to some types — see `references/<type>.md`): GCP auth method (federation vs uploaded key) for `gemini`/`gcp_sa`/`apigee`, `service_account_bound` for `gemini`, `auth_method: password|key_pair` for `snowflake`, `engine: redis|elasticache|aiven` for `redis` (immutable after create; `elasticache` needs `cache_engine: redis|valkey`, `aiven` needs `project`+`service_name` and takes no `cache_engine`), `engine: native|aiven` for `kafka` (immutable after create), `client_id+client_secret` vs `public_key+private_key` for `mongodb_atlas`, etc. Ask the structural choice and immediately follow with any extra values it requires.
+- **Version floor** — *conditional.* If the chosen type or engine has a row in [Compatibility](#compatibility) (`kafka`, `redis` engine `aiven`), raise it here, immediately after the structural choice — this is the first point in the flow where the type *and* engine are both known, which is why the step-0 probe can't cover it. State the floor and ask whether the cluster meets it. Unlike `remoteName`, these are values inside fields the CRD already accepts, so you cannot resolve a shortfall by offering a different manifest shape: **never drop the user's chosen type or engine.** Generate what they asked for and carry the floor into the post-manifest note (step 9).
 - **Field values** — all required non-sensitive fields the type expects. For `postgres`: `host`, `port`, `db_name`, `ssl_mode`, `username`. Pull the per-type field list and defaults from `references/<type>.md`. Volunteer defaults inline ("port — default 5432") to keep the conversation tight.
 - **Secret source** (skip if the type has no `secretRef`).
   - Existing Secret or generate alongside? Default to `secretRef` over inlining.
@@ -499,7 +505,7 @@ Load these only when generating that specific privilege type — the per-type fi
 
 ## Adding a new type
 
-When a new credential type is added to Hush, add a new `references/<type>.md` following the same structure as existing files (Credential / Privilege / Required permissions on the auth principal / type-specific notes). Then add a row to the table above. No other files need to change.
+When a new credential type is added to Hush, add a new `references/<type>.md` following the same structure as existing files (Credential / Privilege / Required permissions on the auth principal / type-specific notes). Then add a row to the table above. If the type — or one of its engines — is only available from a specific hush-uam release onward, add a row to [Compatibility](#compatibility) as well, otherwise the floor goes unrecorded and the input flow can't warn about it. No other files need to change.
 
 # Workflow
 
@@ -513,11 +519,13 @@ When a new credential type is added to Hush, add a new `references/<type>.md` fo
 6. **Assemble the manifest** with explicit `apiVersion`/`kind`/`metadata.namespace: hush-security`. Default to multi-document YAML (`---` separator) when generating cred + privilege + policy together. Companion `Secret` documents must also live in `hush-security` so the operator can read them.
 7. **For sensitive fields**, generate a `kind: Secret` document alongside the credential, or note that the user must run `kubectl create secret generic <name> --from-literal=<key>=<value>` first.
 8. **Surface the required auth-principal permissions** for the credential's target system. After the manifest, print a clearly-labeled **"Required permissions on the auth principal"** block listing what the GCP SA / IAM role / DB user / API token needs in order for Hush to provision and rotate ephemeral credentials. Pull the list from `references/<type>.md` — every per-type file has a "Required permissions on the auth principal" section. If the per-type file lacks one or marks it "not applicable", say so explicitly to the user — don't invent permissions.
-9. **If the manifest uses `remoteName`**, append a short post-manifest note covering both compatibility and uniqueness:
-   - **Version floor** — the cluster must be running hush-uam ≥ v0.11.0 and helm chart `hush-am` ≥ 0.16.0; older CRDs reject the `remoteName` field at apply time.
-   - **Uniqueness** — the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error.
+9. **If the manifest uses any version-gated feature** (see [Compatibility](#compatibility)), append a short post-manifest version note naming the feature and its floor:
+   - **`remoteName` ref form** — the cluster must be running hush-uam ≥ v0.11.0 and helm chart `hush-am` ≥ 0.16.0; older CRDs reject the `remoteName` field at **apply** time.
+   - **Gated `type`/`engine` values** (`kafka`, `redis` engine `aiven`) — the CRD accepts these, so `kubectl apply` succeeds and the Hush API rejects the create afterwards at **reconcile** time with a version error. Say this explicitly, so a clean apply isn't mistaken for success.
 
-   Ask the user to confirm both before applying. (If the version probe in step 0 already established the cluster is on a recent release, you can shorten the version note to a brief reminder.)
+   Additionally, **if the manifest uses `remoteName`**, cover uniqueness in the same note: the `remoteName` + `type` pair must be unique within the deployment's scope, otherwise the policy status turns to error.
+
+   Ask the user to confirm before applying. (If the version probe in step 0 or the floor check in step 2 already established the cluster's versions, you can shorten the version note to a brief reminder.)
 
 # Validation gotchas
 
