@@ -7,7 +7,7 @@ Four backends, selected by `config.engine`:
 - `redis` — a directly reachable Redis/Valkey server. Hush connects with a root user (username/password) and mints ephemeral ACL users on it.
 - `elasticache` — an AWS ElastiCache replication group. Hush authenticates to AWS and manages users through an ElastiCache user group.
 - `aiven` — an Aiven-managed Valkey service. Hush connects with an Aiven REST API token and mints the user via the Aiven API; it resolves the host/port itself, so no connection fields are supplied. Requires hush-uam ≥ v0.17.0.
-- `azure_managed_redis` — an Azure Managed Redis cluster (`Microsoft.Cache/redisEnterprise`). AMR has no password users, so each credential is an **Entra ID application** instead of a Redis ACL user; Hush resolves the endpoint from ARM. Requires hush-uam ≥ v0.18.0, which is **not released yet**.
+- `azure_managed_redis` — an Azure Managed Redis cluster (`Microsoft.Cache/redisEnterprise`). AMR has no password users, so each credential is an **Entra ID application** instead of a Redis ACL user; Hush resolves the endpoint from ARM. Requires hush-uam ≥ v0.18.0.
 
 `engine` selects which other fields are valid, and is **fixed at create** — it cannot be changed later (ignored on update). Each engine accepts only its own fields: supplying a field that belongs to another engine is rejected, and every field the chosen engine requires must be present at create.
 
