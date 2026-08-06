@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [hush-uam-v0.5.0] - 2026-08-06
+
 ### Added
 
 - `redis` credential: `azure_managed_redis` engine (`config.engine: azure_managed_redis`) alongside the existing `redis`, `elasticache`, and `aiven` engines. An Azure Managed Redis cluster (`Microsoft.Cache/redisEnterprise` — classic Azure Cache for Redis is not supported), addressed by `tenant_id` + `subscription_id` + `resource_group` + `cluster_name`, all four required at create and none unsettable later. AMR has no password users, so each credential is an Entra ID application rather than a Redis ACL user: the optional `client_id` + `secretRef.client_secret` pair is the *root* credential driving the Graph/ARM calls (both-or-neither; omit both to use hush-uam's own workload identity), while the *delivered* `client_id`/`client_secret` are a freshly minted per-credential app whose service principal object ID is the delivered `username`. Hush resolves the endpoint from ARM, so none of the redis/elasticache/aiven fields (`host`, `port`, `password`, `username`, `database`, `tls`, `tls_ca`, `cache_engine`, the ElastiCache fields, `token`, `project`, `service_name`) may be set — and the check is presence-based, so an explicit `null` is rejected too. There is no connection-string template and no `password`/`database`/`tls_ca` to deliver: the workload exchanges the client pair for an Entra token scoped to `https://redis.azure.com/.default`, so delivery is split env vars (`AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `REDIS_USERNAME`, `REDIS_HOST`, `REDIS_PORT`). The privilege schema is unchanged; the grants are carried by an AMR access policy assignment's access string, with channels always scoped explicitly and authentication tokens dropped. Auth-principal requirements documented: Graph `Application.ReadWrite.OwnedBy` (application permission, admin consent; `Application.ReadWrite.All` only when the same root credential also backs an `azure_app` credential over a pre-existing app), five `Microsoft.Cache/redisEnterprise` ARM actions, egress to `login.microsoftonline.com`/`graph.microsoft.com`/`management.azure.com`, and the `2026-05-01-preview` `Microsoft.Cache` API version — all of which fail permanently rather than retrying when unsatisfied. Documented in `references/redis.md` (and the cursor mirror); `SKILL.md` catalog, structural-decisions, and connection-string notes updated. Compatibility floor recorded as hush-uam v0.18.0 / chart 0.22.1.
@@ -65,7 +69,8 @@ Initial public release of the `hush-uam` plugin. Tracks operator API version `am
 - Resource-grouped, policy-first structured input flow via `AskUserQuestion`.
 - Cursor wrapper at `tools/cursor/hush-uam/` generated from canonical content by `scripts/sync-tools.sh`.
 
-[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.4.0...HEAD
+[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.5.0...HEAD
+[hush-uam-v0.5.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.5.0
 [hush-uam-v0.4.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.4.0
 [hush-uam-v0.3.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.3.0
 [hush-uam-v0.2.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.2.0
