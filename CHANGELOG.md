@@ -12,6 +12,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - `SKILL.md` `## Compatibility`: version floors for the type- and engine-level features that were previously unrecorded — `kafka` credential type (hush-uam v0.15.0 / chart 0.19.0) and `redis` engine `aiven` (v0.17.0 / 0.21.0) — plus the input-flow wiring that acts on them. These floors are enforced by the Hush API at reconcile time, not by the CRD at apply time, so `kubectl apply` succeeds and the create fails afterwards with a version error; the section now distinguishes the two failure modes explicitly. The step-0 version probe only ever covered the `remoteName` ref form and is skipped on the fresh-trio path, which is exactly where a type/engine floor applies, so the floor check now lives in the credential block (step 2) where the type and engine are both known, and the post-manifest note (step 9) is no longer gated on `remoteName`. A shortfall never causes the chosen type/engine to be dropped — unlike `remoteName` there is no alternative manifest shape — it is generated and warned about. Floors also noted in `references/kafka.md` and `references/redis.md`, and "Adding a new type" now points at the Compatibility table.
 
+### Fixed
+
+- `kv` credential reference: `config.keys` does not exist in the API and is now gone from `references/kv.md` (and the cursor mirror). The correct shape is `secretRef` alone — the operator builds the API's `items` field (`{key, value}` pairs) from the Secret's entries, with `keyMappings` to select/rename — plus an optional inline `config.items` for non-sensitive values. The bogus `keys` list was forwarded as an unknown field that create tolerated (`AccessCredentialIn` allows extras) but every update rejected (`AccessCredentialChange` is strict), so a manifest generated from the old reference worked once and then failed on the first PATCH, never recording `status.foreignId` and blocking adoption by a replacement cluster (HUSH-6962). Also documented: `keys` exists only in API responses, and removing a Secret key still referenced by a policy's delivery config is rejected.
+
 ## [hush-uam-v0.4.0] - 2026-07-13
 
 ### Added
