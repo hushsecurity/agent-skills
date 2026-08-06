@@ -16,6 +16,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - `kv` credential reference: `config.keys` does not exist in the API and is now gone from `references/kv.md` (and the cursor mirror). The correct shape is `secretRef` alone — the operator builds the API's `items` field (`{key, value}` pairs) from the Secret's entries, with `keyMappings` to select/rename — plus an optional inline `config.items` for non-sensitive values. The bogus `keys` list was forwarded as an unknown field that create tolerated (`AccessCredentialIn` allows extras) but every update rejected (`AccessCredentialChange` is strict), so a manifest generated from the old reference worked once and then failed on the first PATCH, never recording `status.foreignId` and blocking adoption by a replacement cluster (HUSH-6962). Also documented: `keys` exists only in API responses, and removing a Secret key still referenced by a policy's delivery config is rejected.
 
+- `aws_access_key` credential reference: document the `config.permission_boundary` flag (boolean, default `false`) that was missed when the skill was authored — it predates the skill by eight days (HUSH-5638). When `true`, each provisioned IAM user is created with the privilege's first policy ARN as its permissions boundary, in addition to the normal policy attachment (HUSH-6962).
+
 ## [hush-uam-v0.4.0] - 2026-07-13
 
 ### Added
