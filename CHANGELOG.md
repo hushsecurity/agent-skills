@@ -6,7 +6,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- `hush-uam-manifest`: the `azure_managed_redis` client-pair freshness rule is documented as applying only when a pair is stored. A credential created without `client_id`/`client_secret` holds no secret to invalidate, so its `tenant_id` can be moved on its own; the reference previously implied every tenant change needs a matching `client_secret`, which would push a default-credential-chain credential into adopting a pair it did not ask for. Requires the midgard fix (midgard#377) to be deployed.
 
 ## [hush-uam-v0.5.0] - 2026-08-06
 
