@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `hush-uam-manifest`: `auth0` credential and privilege types. The credential carries `config.domain`, an optional `config.custom_domain` and `config.client_id`, with the management application's `client_secret` in `secretRef`. The privilege carries `config.application_id` and nothing else: Hush rotates a Private Key JWT keypair in place on an application the customer already owns, so its `client_id` never changes. New `references/auth0.md` and a catalog entry in `SKILL.md`.
+
+  Four rules are worth restating because they are easy to get wrong and fail late: `config.domain` must be the canonical `*.auth0.com` host, because the Management API audience is fixed at tenant creation and deriving it from a custom domain fails every apply; the named application must already be on Private Key JWT, must not be granted the Management API, and may back only one access policy; the management application needs exactly six Management API scopes, `update:client_credentials` among them because activating a key is a `PATCH` of `client_authentication_methods`; and the workload must sign a client assertion, so a generic OAuth2 client or `curl` will not work.
+
 ### Fixed
 
 - `hush-uam-manifest`: the `azure_managed_redis` client-pair freshness rule is documented as applying only when a pair is stored. A credential created without `client_id`/`client_secret` holds no secret to invalidate, so its `tenant_id` can be moved on its own; the reference previously implied every tenant change needs a matching `client_secret`, which would push a default-credential-chain credential into adopting a pair it did not ask for. Requires the midgard fix (midgard#377) to be deployed.

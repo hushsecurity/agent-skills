@@ -486,6 +486,7 @@ Each supported credential type has its own reference file in `references/<type>.
 | `sendgrid` | yes | [`references/sendgrid.md`](references/sendgrid.md) | + see `references/sendgrid-scopes.md` |
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + see `references/twilio-permissions.md` |
 | `temporal_cloud` | yes | [`references/temporal_cloud.md`](references/temporal_cloud.md) | Workflow engine; no `config` block, admin API key in `secretRef` |
+| `auth0` | yes | [`references/auth0.md`](references/auth0.md) | Identity; rotates a keypair on an application you already own (`config.application_id`) |
 | `kafka` | yes | [`references/kafka.md`](references/kafka.md) | Messaging; `native` or `aiven` engine (`config.engine`, fixed at create) |
 | `aws_wif` | **no** | [`references/aws_wif.md`](references/aws_wif.md) | Federation |
 | `gcp_wif` | **no** | [`references/gcp_wif.md`](references/gcp_wif.md) | Federation |
