@@ -6,6 +6,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `hush-uam-manifest` now writes **Terraform** as well as Kubernetes. The Hush model is the same either way — same 29 credential types, same five attestation criteria, same six delivery modes, same privilege shapes, same permissions on the auth principal — so the skill stays one skill and picks a target instead of splitting in two. It infers the target from the repo (`*.tf` and `.terraform/` against `kustomization.yaml` and existing `am.hush.security` YAML), asks when the evidence is ambiguous, and reads the matching reference file before emitting anything.
+
+  `SKILL.md` keeps what both targets share and hands the syntax to two new files. `references/terraform.md` covers the provider block and realm, the `hush_<type>_access_credential` naming, the write-only secret pattern, `deployment_ids`, `hush_secret_store`, the six delivery blocks and the `$${}` template escaping. `references/kubernetes.md` holds what used to be inline in `SKILL.md` — the fixed `hush-security` namespace, the CRD shapes, `keyMappings`, the `name`/`id`/`remoteName` ref forms and the `enabled` drift rule — unchanged in substance.
+
+  Four differences are worth knowing before generating either form. Terraform has no namespace and an explicit `deployment_ids` instead, required on every credential and policy, capped at one and effectively immutable. It has no `secretRef`: secrets are inline arguments, and the write-only form needs `<field>_wo` **and** `<field>_wo_version` together, since the two are `RequiredWith` each other. It has no `remoteName`, so an externally created credential must be referenced by its `acr-` id or imported. And the `enabled` advice inverts — omitting it in Kubernetes opts out of drift correction, while in Terraform it simply defaults to `true` and is always reconciled.
+
+  The sharpest one: `hush_access_policy` has no cross-field validation at all. The rules the CRD enforces at apply — WIF matching its credential type, `k8s:container-name` barred from WIF delivery, `subject_kind = service_account` needing both `k8s:ns` and `k8s:sa`, the env-name regex, static credentials refusing privileges — are checked only by the API, so a clean `terraform plan` proves nothing. The skill carries those rules itself.
+
+  Per-type reference files gained a `## Terraform` section only where they actually diverge; twelve did. Most are renames or secret-argument notes, but several are capabilities Terraform cannot reach at all, and the skill now says so rather than emitting HCL that fails: no `hush_mariadb_access_privilege`, no `service_account_bound` on `gemini`, no EU `host` on `sendgrid`, no API-key auth on `elasticsearch`, no `graph_api_permissions` on `azure_app`, and only five of the API's sixteen `object_type` values on the postgres privilege. Two provider enums disagree with the API outright and are flagged as traps: `mysql` `ssl_mode` spells `verify-ca` with an underscore, which makes certificate verification unreachable from Terraform, and the `rabbitmq` privilege accepts a `none` tag the API rejects. All of these are recorded in HUSH-7704.
+
+  Also corrected while auditing: `references/datadog.md` documented only the default `site`, and now lists all seven the API accepts.
+
 ### Fixed
 
 - `hush-uam-manifest`: the `azure_managed_redis` client-pair freshness rule is documented as applying only when a pair is stored. A credential created without `client_id`/`client_secret` holds no secret to invalidate, so its `tenant_id` can be moved on its own; the reference previously implied every tenant change needs a matching `client_secret`, which would push a default-credential-chain credential into adopting a pair it did not ask for. Requires the midgard fix (midgard#377) to be deployed.

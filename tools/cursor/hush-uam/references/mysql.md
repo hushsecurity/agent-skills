@@ -47,3 +47,14 @@ GRANT ALL PRIVILEGES ON <db_name>.* TO '<root-user>'@'%' WITH GRANT OPTION;
 ```
 mysql://${username}:${password}@${host}:${port}/${db_name}
 ```
+
+## Terraform
+
+⚠️ **The provider's `ssl_mode` enum is wrong.** `hush_mysql_access_credential` validates
+`verify_ca` / `verify_identity` with underscores, but the API expects `verify-ca` /
+`verify-identity` with hyphens. Both spellings fail — the underscore form at apply, the
+hyphen form at plan — so **certificate verification cannot be configured from Terraform**.
+Use `disabled`, `preferred` or `required` and tell the user. (`mariadb` is unaffected; its
+enum is correct.)
+
+Secret: `password` / `password_wo` + `password_wo_version`.

@@ -6,7 +6,9 @@ Datadog credentials and privileges. Dynamic credentials — provisions ephemeral
 
 ```yaml
 config:
-  site: datadoghq.com           # default
+  site: datadoghq.com           # default; one of: datadoghq.com, us3.datadoghq.com,
+                                #   us5.datadoghq.com, ap1.datadoghq.com, ap2.datadoghq.com,
+                                #   datadoghq.eu, ddog-gov.com
 secretRef:
   name: <k8s-secret>
   # canonical keys: api_key, app_key

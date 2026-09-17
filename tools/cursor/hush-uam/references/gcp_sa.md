@@ -42,3 +42,11 @@ The Hush agent's service account must hold these IAM roles on the target GCP pro
 - `roles/iam.serviceAccountAdmin` — create and manage service accounts
 - `roles/iam.serviceAccountKeyAdmin` — create and manage service account keys
 - `roles/resourcemanager.projectIamAdmin` — manage IAM policies on the project
+
+## Terraform
+
+The privilege block `sa_conf` is named **`sa_config`** on
+`hush_gcp_sa_access_privilege`; the provider maps it back to `sa_conf` for the API.
+`project_id` is required, and exactly one of `sa_email` or `sa_config` must be set.
+Credential secret: `service_account_key` / `service_account_key_wo` +
+`service_account_key_wo_version`.

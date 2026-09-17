@@ -58,3 +58,12 @@ The service account (provided via `secretRef` or via federated identity) must ha
   - `iam.serviceAccounts.delete`
   - `iam.serviceAccounts.get`
   - `iam.serviceAccountApiKeyBindings.create`
+
+## Terraform
+
+**`service_account_bound` is not available** on `hush_gemini_access_credential` — decision
+2 above has no Terraform expression, and Terraform-managed Gemini credentials are always
+unbound. If the user wants bound API keys, they need the Kubernetes CR or the API.
+
+Secret: `service_account_key` / `service_account_key_wo` +
+`service_account_key_wo_version`.

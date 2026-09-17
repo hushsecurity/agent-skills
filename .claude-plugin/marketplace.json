@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "hush-uam",
-      "description": "Author Kubernetes manifests for the Hush UAM (Universal Access Management) operator — AccessCredential, AccessPrivilege, AccessPolicy CRDs.",
+      "description": "Author Hush UAM (Universal Access Management) resources — AccessCredential, AccessPrivilege, AccessPolicy — as Kubernetes CRDs or as Terraform HCL.",
       "category": "security",
       "source": {
         "source": "git-subdir",

@@ -51,3 +51,11 @@ Valid tags: `administrator`, `monitoring`, `policymaker`, `management`, `imperso
 ```
 amqp://${username}:${password}@${host}:${port}/${vhost}
 ```
+
+## Terraform
+
+⚠️ `hush_rabbitmq_access_privilege.tags` also accepts **`none`**, which the API rejects.
+Never emit it — the five valid tags are the ones listed above.
+
+`tls_ca` is marked sensitive on this type (unlike every other type's `tls_ca`/`ssl_ca`)
+and has no write-only twin. Secret: `password` / `password_wo` + `password_wo_version`.

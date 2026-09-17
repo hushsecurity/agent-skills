@@ -7,9 +7,9 @@ Elasticsearch credentials and privileges. Dynamic credentials — provisions eph
 ```yaml
 config:
   host: <hostname>
-  port: 9200                  # required (no implicit default; 9200 is Elasticsearch's standard port)
+  port: 9200                  # default
   username: <root-username>   # optional (basic auth)
-  tls: true                   # required (true/false; no implicit default)
+  tls: false                  # default
   tls_ca: <optional-pem>
 secretRef:
   name: <k8s-secret>
@@ -51,3 +51,14 @@ The configured root credentials must have the cluster privilege:
 ```
 http://${username}:${password}@${host}:${port}
 ```
+
+## Terraform
+
+Two divergences on `hush_elasticsearch_access_credential`:
+
+- **API-key auth is unreachable.** The provider has no `api_key` argument, so only
+  username + password works. If the user wants API-key auth, they must create the
+  credential outside Terraform.
+- **`username` is Required**, although the API allows it to be null.
+
+Secret: `password` / `password_wo` + `password_wo_version`.

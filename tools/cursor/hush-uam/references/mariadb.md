@@ -49,3 +49,14 @@ The root user must hold:
 ```
 mariadb://${username}:${password}@${host}:${port}/${db_name}
 ```
+
+## Terraform
+
+**There is no `hush_mariadb_access_privilege` resource.** The credential works
+(`hush_mariadb_access_credential`), and the privilege type is real in the API, but it has
+no Terraform expression — create it via the API, UI or a Kubernetes CR and reference the
+`apr-` ID. This is the only type where a privilege exists in the CRD model and not in
+Terraform.
+
+Credential arguments match one-for-one. Secret: `password` / `password_wo` +
+`password_wo_version`.
