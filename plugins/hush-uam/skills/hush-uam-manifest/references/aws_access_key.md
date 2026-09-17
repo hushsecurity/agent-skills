@@ -39,3 +39,10 @@ Either AWS's built-in IAM administration policy, or a custom policy granting:
 - `iam:TagUser`
 - `iam:ListAttachedUserPolicies`
 - `iam:ListAccessKeys`
+
+## Terraform
+
+`config.access_key_id` is named **`access_key_id_value`** on
+`hush_aws_access_key_access_credential` — the only type where the name differs
+(`bedrock` and `redis` use a plain `access_key_id`). Secret: `secret_access_key` /
+`secret_access_key_wo` + `secret_access_key_wo_version`.

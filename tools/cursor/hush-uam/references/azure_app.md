@@ -38,3 +38,11 @@ The configured Service Principal (App Registration) must be granted the followin
 - `AppRoleAssignment.ReadWrite.All` — manage app role assignments
 
 These permissions require **Admin Consent** from a Global Administrator or Privileged Role Administrator.
+
+## Terraform
+
+`hush_azure_app_access_privilege.app_config` exposes `display_name` and `roles` only —
+**`graph_api_permissions` is not available**. Roles are a repeated nested block of
+`{ name, scope }`, not a list of strings. Exactly one of `app_id` (a UUID) or `app_config`
+must be set. Credential secret: `client_secret` / `client_secret_wo` +
+`client_secret_wo_version`.

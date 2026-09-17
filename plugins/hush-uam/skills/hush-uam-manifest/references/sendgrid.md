@@ -29,3 +29,11 @@ The configured API key must have the following scopes:
 - `api_keys.create`
 - `api_keys.read`
 - `api_keys.delete`
+
+## Terraform
+
+**`host` is not available** on `hush_sendgrid_access_credential`, and the API defaults it
+to `https://api.sendgrid.com`. **EU SendGrid (`https://api.eu.sendgrid.com`) is therefore
+unreachable from Terraform** — use the Kubernetes CR or the API for an EU account.
+
+Secret: `api_key` / `api_key_wo` + `api_key_wo_version`.

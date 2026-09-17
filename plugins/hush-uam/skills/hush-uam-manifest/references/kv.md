@@ -38,3 +38,14 @@ Not applicable — there's no auth principal. The credential stores user-supplie
 
 - `keys` exists only in API *responses* (server-derived, read-only); it is never sent.
 - Renaming or removing a Secret key changes the credential's key set on the next reconcile; the API rejects removing a key still referenced by a policy's delivery config.
+
+## Terraform
+
+Restructured: `hush_kv_access_credential` has a **required** `items` block repeated per
+entry, each `{ key, value }`, with the value inline and sensitive. There is no Secret to
+derive keys from and no `keyMappings`.
+
+**`items.value` has no `_wo` form**, so kv values always land in Terraform state. Say so
+when generating one. (The only other sensitive argument without a write-only twin is
+`rabbitmq`'s `tls_ca`.)
+`keys` is a computed read-only attribute.

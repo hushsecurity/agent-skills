@@ -6,7 +6,7 @@ Plugins, skills, and rules for AI coding agents (Claude Code, and future support
 
 | Plugin | Description |
 |---|---|
-| [`hush-uam`](plugins/hush-uam) | Author Kubernetes manifests for the Hush UAM operator — `AccessCredential`, `AccessPrivilege`, `AccessPolicy` CRDs under `am.hush.security/v1alpha1`. |
+| [`hush-uam`](plugins/hush-uam) | Author Hush UAM resources — `AccessCredential`, `AccessPrivilege`, `AccessPolicy` — as Kubernetes CRDs under `am.hush.security/v1alpha1`, or as Terraform for the `hushsecurity/hush` provider. |
 
 ## Installation
 
@@ -55,8 +55,12 @@ Once installed in Claude Code, ask things like:
 - *"Create an access policy for postgres"*
 - *"I need a Hush credential for our Gemini project"*
 - *"Generate manifests for an OpenAI policy bound to my staging namespace"*
+- *"Add a Hush postgres credential to our Terraform"*
 
-The skill activates automatically based on intent and walks you through the necessary inputs (scope, attestation, delivery, credential fields, secret strategy, privileges) using structured questions.
+The skill activates automatically based on intent. It first establishes whether you want
+Kubernetes manifests or Terraform — inferring it from the repo where it can, asking where it
+can't — then walks you through the necessary inputs (scope, deployment, attestation,
+delivery, credential fields, secret handling, privileges) using structured questions.
 
 ## Repository layout
 
@@ -67,11 +71,29 @@ The skill activates automatically based on intent and walks you through the nece
 │       ├── .claude-plugin/plugin.json    ← plugin manifest
 │       └── skills/
 │           └── hush-uam-manifest/
-│               ├── SKILL.md
-│               └── references/           ← portable Markdown reference docs
+│               ├── SKILL.md             ← shared model, interview, type catalog
+│               └── references/
+│                   ├── kubernetes.md    ← CRD syntax
+│                   ├── terraform.md     ← HCL syntax
+│                   └── <type>.md        ← one per credential type
 ├── .claude-plugin/marketplace.json       ← marketplace manifest (this repo as a Claude Code marketplace)
 └── tools/                                ← wrappers for non-Claude-Code AI tools (Cursor, etc.)
 ```
+
+## Checking the skill against upstream
+
+The `hush-uam` skill makes a lot of concrete claims about `terraform-provider-hush` and
+the Hush API — which resources exist, which secrets may be omitted, which version floors
+apply. [`scripts/check-claims.py`](scripts/check-claims.py) verifies them against the real
+sources rather than by reading the prose:
+
+```bash
+scripts/check-claims.py                                   # expects sibling checkouts
+scripts/check-claims.py --provider ~/src/terraform-provider-hush
+```
+
+It is a maintainer tool, not a CI step, because it reads repositories CI does not have.
+Run it after editing a reference file, and when the provider or the API changes.
 
 ## License
 

@@ -26,3 +26,9 @@ Not applicable — there's no auth principal. The credential is a static secret 
 ## Notes
 
 - `PLAINTEXT_ACCESS_CREDS_DEFAULT_KEY = "data"` is the *delivery-side* default when a delivery `items[].key` is omitted — unrelated to the secretRef key.
+- A plaintext credential has exactly one value, so the API does not validate delivery `key` names for it. **Omit `key` on the delivery item** (both targets) rather than guessing a field name; only `name`/`path` matters.
+
+## Terraform
+
+There is no `secretRef`. `hush_plaintext_access_credential` takes the value inline as
+`secret`, or write-only as `secret_wo` + `secret_wo_version`.

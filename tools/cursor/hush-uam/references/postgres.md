@@ -67,3 +67,16 @@ postgresql://${username}:${password}@${host}:${port}/${db_name}
 ```
 
 Use with `deliveryConfig.type: env` (or `volume`/`sdk`) and `items[].type: template`.
+
+## Terraform
+
+Two divergences on `hush_postgres_access_privilege`:
+
+- **`object_type` accepts only 5 of the 16 values above** — `TABLE`, `SEQUENCE`,
+  `FUNCTION`, `SCHEMA`, `DATABASE`. The rest are unreachable from Terraform.
+- **`object_names` is marked Optional but the API requires it.** Omitting it plans cleanly
+  and fails at apply. Always emit it. With `all_in_schema = true` it lists *schemas*, not
+  individual objects.
+
+`grants` is a repeated block, not a list. Credential secret: `password` / `password_wo` +
+`password_wo_version`.
