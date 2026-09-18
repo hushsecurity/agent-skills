@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [hush-uam-v0.6.0] - 2026-09-18
+
 ### Added
 
 - `hush-uam-manifest` now writes **Terraform** as well as Kubernetes. The Hush model is the same either way — same 29 credential types, same five attestation criteria, same six delivery modes, same privilege shapes, same permissions on the auth principal — so the skill stays one skill and picks a target instead of splitting in two. It infers the target from the repo (`*.tf` and `.terraform/` against `kustomization.yaml` and existing `am.hush.security` YAML), asks when the evidence is ambiguous, and reads the matching reference file before emitting anything.
@@ -95,7 +99,8 @@ Initial public release of the `hush-uam` plugin. Tracks operator API version `am
 - Resource-grouped, policy-first structured input flow via `AskUserQuestion`.
 - Cursor wrapper at `tools/cursor/hush-uam/` generated from canonical content by `scripts/sync-tools.sh`.
 
-[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.5.0...HEAD
+[Unreleased]: https://github.com/hushsecurity/agent-skills/compare/hush-uam-v0.6.0...HEAD
+[hush-uam-v0.6.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.6.0
 [hush-uam-v0.5.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.5.0
 [hush-uam-v0.4.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.4.0
 [hush-uam-v0.3.0]: https://github.com/hushsecurity/agent-skills/releases/tag/hush-uam-v0.3.0

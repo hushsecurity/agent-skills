@@ -1,6 +1,6 @@
 {
   "name": "hush-uam",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Hush UAM (Universal Access Management) toolkit — currently includes the hush-uam-manifest skill for authoring AccessCredential, AccessPrivilege and AccessPolicy resources, as Kubernetes CRDs or as Terraform for the hushsecurity/hush provider.",
   "author": {
     "name": "Hush Security"
