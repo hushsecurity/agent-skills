@@ -33,6 +33,8 @@ Valid privileges:
 - `database`: `ALL`, `CREATE`, `CREATE ROUTINE`, `CREATE TEMPORARY TABLES`, `DROP`, `EVENT`, `EXECUTE`, `LOCK TABLES`
 - `table`: `ALL`, `ALTER`, `CREATE`, `CREATE VIEW`, `DELETE`, `DROP`, `INDEX`, `INSERT`, `REFERENCES`, `SELECT`, `SHOW VIEW`, `TRIGGER`, `UPDATE`
 
+Note what this means for presets: `SELECT`/`INSERT`/`UPDATE`/`DELETE` exist only at `table` scope, so a read-only or read-write preset must use `resource_type: table`. `resource_names` is optional there — omitting it grants on every table in the database, which is exactly what the API's own presets do (`read_only_all_tables` is `SELECT` at table scope with no names; `read_write_all_tables` the four DML privileges the same way). At `database` scope the API accepts only the DDL-shaped set above and `ALL`. When the user asks for "read-write on the whole database", offer the four DML privileges on every table (Recommended) against `ALL` on the database, with named tables as the narrower third option — do not silently pick one.
+
 ## Required permissions on the auth principal
 
 The root user needs:

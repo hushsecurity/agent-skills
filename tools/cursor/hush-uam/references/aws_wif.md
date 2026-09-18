@@ -32,6 +32,33 @@ WIF constraints:
 - `k8s:container-name` attestation is **not** allowed with WIF delivery.
 - `subject_kind: service_account` requires both `k8s:ns` and `k8s:sa` attestation criteria.
 
+## Subject and cloud-side trust
+
+The credential is the OIDC issuer. Once created, Hush assigns it an `issuer_url`
+(`https://<hush am host>/federation/v1/<org-id>/<acr-id>`, e.g.
+`am.us.hush-security.com`) and an `audience` (`sts.amazonaws.com`). Both are visible on the credential in the Hush UI or
+API — **not** in the CR status — and both go into the AWS-side trust.
+
+The JWT `sub` depends on `subject_kind`:
+
+| `subject_kind` | `sub` claim |
+| --- | --- |
+| `hush_subject` | `hush:federation:<subject>` |
+| `service_account` | `system:serviceaccount:<k8s:ns value>:<k8s:sa value>` |
+
+What the workload gets: the admission controller injects `AWS_WEB_IDENTITY_TOKEN_FILE`
+(`/var/run/secrets/hush.security/federation/aws/token`) and `AWS_ROLE_ARN` into every
+container, plus a sidecar that refreshes the token. The AWS SDK picks these up on its own.
+
+AWS side, three things: an `aws_iam_openid_connect_provider` whose `url` is the
+`issuer_url` and whose `client_id_list` is `["sts.amazonaws.com"]`; the role's trust
+policy allowing `sts:AssumeRoleWithWebIdentity` from that provider with a `StringEquals`
+on `<issuer host/path>:aud` = `sts.amazonaws.com` and a `StringLike` on
+`<issuer host/path>:sub` matching the subject form above; and the role's permissions
+policy, which is where what the workload *may do* lives.
+
 ## Required permissions on the auth principal
 
-Not directly applicable — federation is workload-side; access is enforced by AWS via the role's trust policy. The role's trust policy must accept tokens from Hush's OIDC issuer.
+Not applicable — there is nothing for Hush to provision. Access is decided by the IAM
+role's trust policy (who may assume it) and permissions policy (what it may do), both
+managed on the AWS side as described above.
