@@ -261,11 +261,14 @@ Rules:
   Within a resource, structural choices come right before the values they unlock.
 - **Skip what you already know** from the prompt — but be conservative. `type` is genuinely
   pinned by "policy for postgres". **Scope is *not* pinned** by mentioning a policy: always
-  ask scope when a policy is involved, presenting the trio as Recommended but listing the
-  alternatives so the user can opt out.
-- **Never ask which namespace the CRs go in** — it is always `hush-security`. The
-  *workload's* namespace, the `k8s:ns` attestation value, is a different thing and you
-  always ask for it. (Terraform has no CR namespace; it has `deployment_ids` instead,
+  ask scope when a policy is involved, presenting the trio as Recommended — unless the type
+  takes no privilege or the credential already exists, in which case recommend the fitting
+  narrower scope (see *Canonical input order*) — but list the alternatives so the user can
+  opt out.
+- **Never ask which namespace the CRs go in** — it is the namespace hush-am is installed
+  in, `hush-security` in a standard installation; `references/kubernetes.md` names the one
+  evidence-based exception. The *workload's* namespace, the `k8s:ns` attestation value, is
+  a different thing and you always ask for it. (Terraform has no CR namespace; it has `deployment_ids` instead,
   which you *do* ask about.)
 
 ### `defaults` shortcut
@@ -559,7 +562,11 @@ files need to change.
 7. **Add a post-generation note** covering anything version-gated or risky:
    - Any [Compatibility](#compatibility) floor the output relies on, naming whether it
      fails at apply or later.
-   - *Kubernetes:* if the manifest uses `remoteName`, the uniqueness requirement.
+   - *Kubernetes:* if the manifest uses `remoteName`, the uniqueness requirement. Always:
+     how to check the result (`kubectl -n hush-security get accesspolicy` and the status
+     columns, see `references/kubernetes.md`), that deleting or renaming a CR deletes or
+     recreates the object in Hush, and that a Secret edit alone is not picked up — the
+     credential's `spec` has to change too.
    - *Terraform:* that a clean `terraform plan` does **not** mean the API will accept it —
      see the validation note below.
 

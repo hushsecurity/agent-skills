@@ -9,18 +9,25 @@ The CRDs live under the API group `am.hush.security/v1alpha1` and cover three ki
 straight to the Hush API, so the keys inside `config` must match what the API expects for
 the chosen `type`.
 
-## ⚠️ CRITICAL: namespace is fixed
+## ⚠️ CRITICAL: the CRs live in the hush-am namespace
 
-**Every manifest you generate MUST use `metadata.namespace: hush-security`.** The Hush
-operator only watches the `hush-security` namespace; resources placed anywhere else will
-silently fail to sync with the Hush platform. This applies to:
+The api-controller watches **only the namespace the `hush-am` chart is installed in**. It
+reads that namespace from its own pod, and its RBAC is a namespaced Role, so it cannot see
+CRs or Secrets anywhere else. Resources placed in another namespace are simply ignored — no
+error, no status, nothing syncs.
+
+In a standard installation that namespace is **`hush-security`**, and every manifest you
+generate MUST use `metadata.namespace: hush-security`. This applies to:
 
 - `AccessCredential`, `AccessPrivilege`, `AccessPolicy` CRs
-- Any companion `Secret` you generate alongside
+- Any companion `Secret` you generate alongside — the operator reads it from the CR's own
+  namespace and nowhere else
 
-**Do not** ask the user which namespace to use, do not accept overrides, and do not infer a
-namespace from the prompt. If the user explicitly asks for a different namespace, push back
-and explain that the operator only watches `hush-security`.
+**Do not** ask the user which namespace to use, and never put the CRs in the workload's
+namespace. If the user asks for a different namespace, push back and explain the above.
+The one legitimate exception is evidence in the repo that hush-am itself is installed
+elsewhere — a `HelmRelease`, an Argo `Application`, or a values file for the `hush-am`
+chart naming another namespace. Then use that namespace, and say why.
 
 **Note:** this constraint is about *where the CRs live*. It is NOT the same as the
 workload's namespace, which appears in `attestationCriteria` entries of type `k8s:ns` and
@@ -41,7 +48,7 @@ apiVersion: am.hush.security/v1alpha1
 kind: AccessCredential
 metadata:
   name: <metadata-name>             # decoupled from spec.name
-  namespace: hush-security          # FIXED — never change
+  namespace: hush-security          # the hush-am install namespace; hush-security in a standard install
 spec:
   name: <display-name>              # what the API sees
   type: <type>                      # see the Type catalog in SKILL.md
@@ -61,7 +68,7 @@ apiVersion: am.hush.security/v1alpha1
 kind: AccessPrivilege
 metadata:
   name: <metadata-name>
-  namespace: hush-security          # FIXED — never change
+  namespace: hush-security          # the hush-am install namespace; hush-security in a standard install
 spec:
   name: <display-name>
   type: <type>
@@ -79,7 +86,7 @@ apiVersion: am.hush.security/v1alpha1
 kind: AccessPolicy
 metadata:
   name: <metadata-name>
-  namespace: hush-security          # FIXED. The CR lives here regardless of where the workload runs.
+  namespace: hush-security          # the hush-am install namespace, NOT the workload's
 spec:
   name: <display-name>
   description: <optional>
@@ -116,13 +123,26 @@ spec:
   Even an *identity* mapping (e.g. `password: password`) is valid and useful — it
   explicitly opts in to that one key and filters out the rest.
 
+Three details the operator enforces on top of that:
+
+- **A mapped key missing from the Secret fails the sync** (`secret "x" missing key "y"`),
+  so every entry must name a key that actually exists.
+- **`plaintext` is special.** Without `keyMappings` the Secret must hold exactly **one**
+  entry; its key name is irrelevant and the value becomes the credential's `secret`. Two
+  or more entries are rejected as ambiguous — add `keyMappings: {secret: <key>}` to pick
+  one.
+- **`kv` maps to item names.** Each entry `<item-key>: <secret-key>` becomes one
+  credential item called `<item-key>`; without `keyMappings` every Secret key becomes an
+  item under its own name.
+
 ### Recommended pattern
 
 - **Generating the Secret alongside the manifest** → use canonical key names (`password`,
   `api_key`, etc.), skip `keyMappings`. You control the Secret, so there are no extra keys.
-- **Referring to an existing Secret** → ask the user for the actual key names and **always
-  emit `keyMappings`**, even if every entry is identity. This avoids silent failures when
-  the Secret has extra keys, and makes the manifest self-documenting.
+- **Referring to an existing Secret** → learn the actual key names — read the Secret's
+  manifest if it is in the repo, ask otherwise — and **always emit `keyMappings`**, even if
+  every entry is identity. This avoids silent failures when the Secret has extra keys, and
+  makes the manifest self-documenting.
 
 ```yaml
 # Existing Secret with extra keys — keyMappings filters to just what's needed
@@ -343,6 +363,52 @@ deliveryConfig:
 You can mix `key` and `template` items in the same `items[]` list — e.g. expose username
 and password as separate env vars *and* a combined `DATABASE_URL`.
 
+## What the operator does after apply
+
+- **Apply order does not matter.** A policy whose `name` refs point at a credential or
+  privilege CR that exists but has not synced yet goes to `Pending` (`waiting for
+  dependency`); one whose ref names a CR that does not exist yet shows `Error`
+  (`resolving references: ... not found`). Both retry every few seconds until the
+  dependency is `Ready`. Apply the whole trio in one `kubectl apply -f` and let it settle.
+- **Editing the Secret alone does not re-sync the credential.** The operator does watch
+  the referenced Secret, but the reconcile it queues is dropped when the CR's generation
+  and the object's `modified_at` in Hush are both unchanged — and a Secret edit changes
+  neither. To push a rotated root secret, change the Secret **and** make a `spec` change on
+  the credential CR in the same commit (bumping `spec.description` is enough; annotations
+  do not count, the controller filters on generation). When the Secret is not in the repo
+  (an external secrets operator, a sealed secret, a manual `kubectl create`), say so: the
+  Secret changes wherever it is managed, and the CR still needs its `spec` nudge.
+- **Deleting a CR deletes the Hush object.** Each CR carries a finalizer; on delete the
+  operator removes the credential, privilege or policy from Hush UAM. Pruning a manifest
+  in GitOps is a real deletion. A credential or privilege still referenced by a policy
+  cannot go yet — its CR sits in `Deleting` (`credential still referenced by a policy, will
+  retry`, or the privilege equivalent) until the policy is gone too.
+- **Names are identities.** The operator records the CR's `metadata.name` on the Hush
+  object. Re-creating a CR with the same name and type adopts the existing object rather
+  than creating a duplicate; renaming a CR creates a new object and deletes the old one —
+  for a dynamic credential, new provisioned users and revocation of the old ones. Warn
+  before renaming. Adoption is scoped to the deployment the operator runs in.
+- **`spec.config` must not set `foreign_id`.** The controller owns that field and refuses
+  a manifest that names it.
+
+## Verifying after apply
+
+```
+kubectl -n hush-security get accesscredential,accessprivilege,accesspolicy
+```
+
+The `STATUS` column is the operator's sync state, one of `Syncing`, `Pending` (waiting on
+a `name` ref), `Ready`, `Error`, `Deleting`. `UAM STATUS`, `STATUS CODE` and `STATUS
+DETAIL` are what Hush UAM reports about the object itself once it exists — a credential
+can be `Ready` on the operator side and still failing to provision on the Hush side, and
+that is where it shows. Those three columns are filled only when the installed CRDs carry
+the status fields (chart `hush-am` >= 0.15.0); on older CRDs they stay blank. `kubectl
+describe` lists the same as Events (`SyncError`, `Pending`, `Adopted`, and `SyncConflict`,
+whose text names the usual cause: a second object of this deployment already holding this
+manifest name), and `status.message` carries the API's error text for an `Error`. A
+version floor rejected at reconcile time lands here too. Tell the user to check this after
+applying.
+
 ## Kubernetes-only validation gotchas
 
 These are on top of the shared rules in SKILL.md:
@@ -355,8 +421,11 @@ These are on top of the shared rules in SKILL.md:
 - **Secret with extra keys + no `keyMappings` → API failure.** Emit `keyMappings` (identity
   is fine) whenever you reference a Secret you didn't generate.
 - **Wrong namespace → silent sync failure.** All CRs and companion Secrets MUST live in
-  `hush-security`. Resources placed elsewhere are simply ignored — no error, just nothing
-  happens. Never override this.
+  the namespace hush-am is installed in, `hush-security` in a standard installation.
+  Resources placed elsewhere are simply ignored — no error, just nothing happens.
+- **`plaintext` with a multi-entry Secret and no `keyMappings` → sync error.** Pick the
+  entry with `keyMappings: {secret: <key>}`.
+- **`spec.config.foreign_id` → refused.** The controller sets it itself.
 
 ## Example: Postgres trio
 

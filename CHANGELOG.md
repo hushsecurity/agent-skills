@@ -20,6 +20,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
   Also corrected while auditing: `references/datadog.md` documented only the default `site`, and now lists all seven the API accepts.
 
+### Changed
+
+- `hush-uam-manifest` corrects three things on the Kubernetes target. The CRs do not have to live in `hush-security` as such: the operator watches the namespace the `hush-am` chart is installed in, which is `hush-security` in a standard installation, so the skill still says that but now honours a `HelmRelease`, Argo `Application` or values file that installs hush-am elsewhere. A `plaintext` credential's Secret key does not have to be called `secret`: a single-entry Secret works under any key, a multi-entry one is rejected, and `keyMappings: {secret: <key>}` is the fix. And `references/kubernetes.md` now says what happens after `kubectl apply`: order does not matter because a policy retries until its `name` refs resolve; deleting a CR deletes the Hush object, and a credential or privilege still referenced by a policy waits in `Deleting`; a re-created CR of the same name adopts the existing object while a rename creates a new one; `spec.config` may not set `foreign_id`; and `kubectl get` shows the operator's sync state beside what Hush UAM reports.
+
+  One of those is a warning rather than a rule. Editing the referenced Secret alone does *not* re-sync the credential — the operator drops that reconcile when the CR generation and the remote `modified_at` are unchanged — so a rotated root secret needs a `spec` change on the CR as well, and the skill tells the user so.
+
+  The three WIF references gained what the cloud side needs: the JWT subject forms for `hush_subject` and `service_account`, that the credential's `issuer_url` and `audience` are read from the Hush UI or API rather than the CR status, and the shape of trust each cloud expects. `references/mysql.md` says how a read-write preset is expressed, since the DML privileges exist only at table scope.
+
+  Every claim above was read off the operator and chart sources, and `scripts/check-claims.py` now verifies the Kubernetes target the way it verifies Terraform (see the README).
+
 ### Fixed
 
 - `hush-uam-manifest`: the `azure_managed_redis` client-pair freshness rule is documented as applying only when a pair is stored. A credential created without `client_id`/`client_secret` holds no secret to invalidate, so its `tenant_id` can be moved on its own; the reference previously implied every tenant change needs a matching `client_secret`, which would push a default-credential-chain credential into adopting a pair it did not ask for. Requires the midgard fix (midgard#377) to be deployed.

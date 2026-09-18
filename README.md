@@ -82,18 +82,22 @@ delivery, credential fields, secret handling, privileges) using structured quest
 
 ## Checking the skill against upstream
 
-The `hush-uam` skill makes a lot of concrete claims about `terraform-provider-hush` and
-the Hush API — which resources exist, which secrets may be omitted, which version floors
-apply. [`scripts/check-claims.py`](scripts/check-claims.py) verifies them against the real
+The `hush-uam` skill makes a lot of concrete claims about four other repositories: the
+Terraform provider (`terraform-provider-hush`), the Hush API (`midgard`), the hush-uam
+operator (`mufasa`) and the `hush-am` chart (`helm-charts`) — which resources exist, which
+secrets may be omitted, which version floors apply, what the operator does with a Secret or
+a namespace. [`scripts/check-claims.py`](scripts/check-claims.py) verifies them against the
 sources rather than by reading the prose:
 
 ```bash
-scripts/check-claims.py                                   # expects sibling checkouts
-scripts/check-claims.py --provider ~/src/terraform-provider-hush
+scripts/check-claims.py                                   # expects the four as sibling checkouts
+scripts/check-claims.py --provider ~/src/terraform-provider-hush --mufasa ~/src/mufasa
 ```
 
-It is a maintainer tool, not a CI step, because it reads repositories CI does not have.
-Run it after editing a reference file, and when the provider or the API changes.
+Each repo is read at `origin/main` when the checkout has it, so a sibling parked on a
+feature branch does not verify the wrong thing; a repo that is missing is skipped, not
+failed. It is a maintainer tool, not a CI step, because it reads repositories CI does not
+have. Run it after editing a reference file, and when any of the four changes.
 
 ## License
 
