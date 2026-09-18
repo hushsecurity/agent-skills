@@ -255,8 +255,12 @@ Rules:
 - **For free-form fields with a sensible default** (e.g. a cred name like `gemini-prod`),
   present the default as the recommended option and a generic alternative second.
 - **For required fields with no sensible default** (GCP `project_id`, hostnames, account
-  ARNs), don't fake a default. Offer `I'll provide it now` plus a contextual alternative;
-  the user picks `Other` and types it. Don't lump these into a `defaults` shortcut.
+  ARNs), don't fake a default, and don't offer an option whose label is a promise rather
+  than a value — `I'll provide it now` gets clicked, comes back as the answer, and has to
+  be asked again. Say in the question text "pick Other and type it", and list only
+  concrete options: a contextual guess (`billing` for the namespace of a billing service)
+  or a clearly marked placeholder (`db.billing.internal — placeholder, replace before
+  apply`). Don't lump these into a `defaults` shortcut.
 - **Group by resource.** All policy questions first, then credential, then privilege.
   Within a resource, structural choices come right before the values they unlock.
 - **Skip what you already know** from the prompt — but be conservative. `type` is genuinely
