@@ -1,7 +1,7 @@
 # MCP wrapper
 
 This directory holds the copy of the `hush-uam-manifest` skill that the Hush MCP server
-(lens) is meant to serve as a document, for clients whose agent reads the server's documents itself,
+(lens) serves as a document, for clients whose agent reads the server's documents itself,
 such as the Ask Hush assistant in the Hush portal. The content under
 `hush-uam-manifest/` is **generated** from the canonical Claude Code skill at
 [`../../plugins/hush-uam/skills/hush-uam-manifest/`](../../plugins/hush-uam/skills/hush-uam-manifest/)
@@ -28,16 +28,14 @@ every question is about Hush.
 
 ## How lens serves it
 
-Lens turns the markdown under its S3 docs prefix into `docs://` resources, one per file:
-`SKILL.md` and each `references/<file>.md` become their own documents, which Ask Hush lists
-and reads with its `list_docs` and `read_doc` tools.
+Lens's `make build` downloads this directory from `main` (`AGENT_SKILLS_REF` overrides
+the ref) and bakes it into the image, so a merge here ships with the next lens build.
+Lens serves each file as a `docs://skills/...` resource next to its S3 docs, which Ask
+Hush lists and reads with its `list_docs` and `read_doc` tools:
 
-Two gaps on the lens side, to close before relying on this:
-
-- Lens names each document from its S3 key and ignores frontmatter, so today the skill is
-  listed as "Skill" and the `description` above is only seen after the document is opened.
-  Lens should read the frontmatter, and keep `references/` out of the top-level listing so
-  product questions don't land on a reference without the guide that explains it.
-- Nothing publishes this directory yet. Don't upload it by hand under
-  `s3://hush-knowledgebase/deployments/docs/md/`: the knowledgebase deploy empties that
-  prefix before every upload, so a hand-placed copy disappears on the next docs release.
+- `SKILL.md` is listed under its frontmatter `name` and `description`.
+- Markdown links to `references/<file>.md` are rewritten to the reference's `docs://`
+  URI. Mentions in backticks aren't, which is why the preamble says to find references in
+  the listing.
+- Each reference's description names its guide, so a product question doesn't land on a
+  reference read on its own.
