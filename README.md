@@ -44,6 +44,10 @@ cp -r /tmp/agent-skills/tools/cursor/hush-uam <your-project>/.cursor/rules/
 
 See [`tools/cursor/README.md`](tools/cursor/README.md) for capability caveats (Cursor doesn't have Claude Code's structured-question tool — questions go out as prose).
 
+### Hush MCP server
+
+A copy for the Hush MCP server to serve as a document is generated into [`tools/mcp/`](tools/mcp/), so Ask Hush in the Hush portal can run the same interview. It isn't published yet. See [`tools/mcp/README.md`](tools/mcp/README.md) for how that copy differs.
+
 ### Other AI tools
 
 Wrappers for additional non-Claude-Code agents live under [`tools/`](tools/) — see [`tools/README.md`](tools/README.md) for the current list and contribution notes. If your tool isn't listed yet, the skill content under `plugins/hush-uam/skills/hush-uam-manifest/` is plain Markdown that any LLM-driven editor can read; consult your tool's docs on how to point it at a custom rule/instruction file.

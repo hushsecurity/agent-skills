@@ -48,6 +48,89 @@ skill_description() {
   ' "$1"
 }
 
+# The prose question format, for agents without a structured-question tool.
+# $1 is the example's opening line, which names why the rounds are merged.
+prose_question_format() {
+  printf "### Required format\n\n"
+  printf "1. Group questions by resource (policy / credential / privilege). Ask all\n"
+  printf "   questions for one resource in a single message before moving to the next.\n"
+  printf "2. Number the questions \`1.\`, \`2.\`, \`3.\`, ...\n"
+  printf "3. For each question with discrete options, **place the label \`(a)\`, \`(b)\`, \`(c)\`,\n"
+  printf "   ... at the very start of each option line, with no leading bullet or hyphen.**\n"
+  printf "   The label is the visual anchor, not decoration on a bullet list.\n"
+  printf "4. **Enumerate EVERY valid option.** Do not stop at 2-3 examples. If there are 5\n"
+  printf "   attestation criterion types, list all 5. If there are 6 delivery modes, list\n"
+  printf "   every one the credential type admits (the three WIF modes apply only to the\n"
+  printf "   matching WIF credential type).\n"
+  printf "5. Each option gets a one-line description after the label, explaining what it\n"
+  printf "   means or when to pick it.\n"
+  printf "6. Mark recommended options with \`(Recommended)\` at the end of the description.\n"
+  printf "7. For free-form values (CR names, hostnames, project IDs, env var names): state\n"
+  printf "   the field, the expected format, and any default. Don't bury them inside an\n"
+  printf "   option list.\n"
+  printf "8. End the message with a literal reply template:\n"
+  printf "   \`Reply with: 1: <choice>, 2: <choice>, ...\` — and use \`b,d\` notation for\n"
+  printf "   multi-select questions.\n\n"
+  printf "### Anti-patterns — do NOT do these\n\n"
+  printf -- "- **Bullet hyphens without letter labels.** \`- Full trio — ...\` is wrong; the\n"
+  printf "  user can't answer \"the third bullet\" unambiguously.\n"
+  printf -- "- **Compressed option lists.** \"by namespace + SA\" is wrong if the underlying\n"
+  printf "  question has 5 valid criterion types — list all of them.\n"
+  printf -- "- **Inventing your own reply format.** Use \`1: a, 2: pg-app-policy, 3: a,c\`,\n"
+  printf "  not free-form prose answers.\n"
+  printf -- "- **Asking values across resource boundaries.** Don't ask credential field\n"
+  printf "   values in the same round as policy attestation values.\n\n"
+  printf "### Worked example — copy this format verbatim\n\n"
+  printf "When the user prompts \"I want a policy for postgres\", your first message should\n"
+  printf "look exactly like this (option *contents* will vary by type, but the *format* is\n"
+  printf "fixed):\n\n"
+  printf "\`\`\`\n"
+  printf "%b" "$1"
+  printf "1. Target (pick one):\n"
+  printf "(a) Kubernetes — CRD manifests for the hush-uam operator (Recommended if the repo has k8s manifests)\n"
+  printf "(b) Terraform — HCL for the hushsecurity/hush provider\n\n"
+  printf "2. Scope (pick one):\n"
+  printf "(a) Full trio — AccessCredential + AccessPrivilege + AccessPolicy (Recommended for greenfield)\n"
+  printf "(b) AccessCredential + AccessPolicy — cred is new, no privilege needed\n"
+  printf "(c) AccessPolicy only — references existing cred/privilege by id or name\n"
+  printf "(d) Single resource — cred only, privilege only, or policy only\n\n"
+  printf "3. Deployment (Terraform only -- skip it for Kubernetes, where the deployment is\n"
+  printf "   implicit; on Terraform deployment_ids is REQUIRED on every credential and policy):\n"
+  printf "(a) Manage it here — declare a hush_deployment resource alongside\n"
+  printf "(b) Look it up — data \"hush_deployment\" by name\n"
+  printf "(c) I have the dep- id and will paste it\n\n"
+  printf "4. Policy name (free-form; default: pg-app-policy).\n\n"
+  printf "5. Attestation pattern (multi-select; pick one or more):\n"
+  printf "(a) k8s:ns + k8s:sa — match by namespace + service account (Recommended for K8s workloads)\n"
+  printf "(b) k8s:ns only — match all workloads in a namespace\n"
+  printf "(c) k8s:pod-label — match by pod label key+value\n"
+  printf "(d) k8s:pod-name — match a specific pod\n"
+  printf "(e) k8s:container-name — match a specific container\n\n"
+  printf "6. Delivery type (pick one):\n"
+  printf "(a) env template — single env var like DATABASE_URL from the connection-string template (Recommended for DB types)\n"
+  printf "(b) env split — one env var per credential field (e.g. PG_USER, PG_PASSWORD)\n"
+  printf "(c) volume — write fields to files at a mount point\n"
+  printf "(d) sdk — fetched at runtime via the Hush SDK\n\n"
+  printf "7. enabled management (Kubernetes only -- skip it for Terraform, where enabled\n"
+  printf "   defaults to true and is always reconciled):\n"
+  printf "(a) Toggle outside K8s — omit spec.enabled so Hush API/UI/Terraform can flip it without operator drift (Recommended)\n"
+  printf "(b) Reconcile in K8s — set spec.enabled: true and let the operator restore drift on this field too\n\n"
+  printf "Reply with: 1: <a|b>, 2: <a|b|c|d>, 3: <a|b|c> (Terraform only), 4: <name>,\n"
+  printf "5: <letters, e.g. a or a,c>, 6: <a|b|c|d>, 7: <a|b> (Kubernetes only).\n"
+  printf "Skip the number that does not apply to the target picked in 1.\n"
+  printf "\`\`\`\n\n"
+  printf "Two things the example above does not show, because its prompt pins the type:\n"
+  printf "if the user's prompt does NOT name a credential type, ask for it in Round 1\n"
+  printf "alongside target and scope; and on the Terraform target, ask in the credential\n"
+  printf "round whether they are on Terraform 1.11 or newer, since that decides whether\n"
+  printf "secrets can use the write-only form or must land in state.\n\n"
+  printf "Once those answers come back, ask for the values they unlocked (workload\n"
+  printf "namespace + SA names, env var names, etc.) in the same\n"
+  printf "letter-labeled style if there are discrete choices, or as numbered free-form\n"
+  printf "prompts otherwise. Then continue to the credential round, then the privilege\n"
+  printf "round.\n\n"
+}
+
 # ─── target: tools/cursor ────────────────────────────────────────────────────
 
 sync_cursor() {
@@ -75,91 +158,108 @@ sync_cursor() {
     printf "questions\", you MUST ask via prose using the **exact** format below. The user has\n"
     printf "been told to expect it; deviating makes their reply ambiguous and the\n"
     printf "manifest-generation step will fail.\n\n"
-    printf "### Required format\n\n"
-    printf "1. Group questions by resource (policy / credential / privilege). Ask all\n"
-    printf "   questions for one resource in a single message before moving to the next.\n"
-    printf "2. Number the questions \`1.\`, \`2.\`, \`3.\`, ...\n"
-    printf "3. For each question with discrete options, **place the label \`(a)\`, \`(b)\`, \`(c)\`,\n"
-    printf "   ... at the very start of each option line, with no leading bullet or hyphen.**\n"
-    printf "   The label is the visual anchor, not decoration on a bullet list.\n"
-    printf "4. **Enumerate EVERY valid option.** Do not stop at 2-3 examples. If there are 5\n"
-    printf "   attestation criterion types, list all 5. If there are 6 delivery modes, list\n"
-    printf "   every one the credential type admits (the three WIF modes apply only to the\n"
-    printf "   matching WIF credential type).\n"
-    printf "5. Each option gets a one-line description after the label, explaining what it\n"
-    printf "   means or when to pick it.\n"
-    printf "6. Mark recommended options with \`(Recommended)\` at the end of the description.\n"
-    printf "7. For free-form values (CR names, hostnames, project IDs, env var names): state\n"
-    printf "   the field, the expected format, and any default. Don't bury them inside an\n"
-    printf "   option list.\n"
-    printf "8. End the message with a literal reply template:\n"
-    printf "   \`Reply with: 1: <choice>, 2: <choice>, ...\` — and use \`b,d\` notation for\n"
-    printf "   multi-select questions.\n\n"
-    printf "### Anti-patterns — do NOT do these\n\n"
-    printf -- "- **Bullet hyphens without letter labels.** \`- Full trio — ...\` is wrong; the\n"
-    printf "  user can't answer \"the third bullet\" unambiguously.\n"
-    printf -- "- **Compressed option lists.** \"by namespace + SA\" is wrong if the underlying\n"
-    printf "  question has 5 valid criterion types — list all of them.\n"
-    printf -- "- **Inventing your own reply format.** Use \`1: a, 2: pg-app-policy, 3: a,c\`,\n"
-    printf "  not free-form prose answers.\n"
-    printf -- "- **Asking values across resource boundaries.** Don't ask credential field\n"
-    printf "   values in the same round as policy attestation values.\n\n"
-    printf "### Worked example — copy this format verbatim\n\n"
-    printf "When the user prompts \"I want a policy for postgres\", your first message should\n"
-    printf "look exactly like this (option *contents* will vary by type, but the *format* is\n"
-    printf "fixed):\n\n"
-    printf "\`\`\`\n"
-    printf "Opening round (the body below splits this into Rounds 1-2; Cursor has no\n"
-    printf "question tool, so ask them together in one message).\n\n"
-    printf "1. Target (pick one):\n"
-    printf "(a) Kubernetes — CRD manifests for the hush-uam operator (Recommended if the repo has k8s manifests)\n"
-    printf "(b) Terraform — HCL for the hushsecurity/hush provider\n\n"
-    printf "2. Scope (pick one):\n"
-    printf "(a) Full trio — AccessCredential + AccessPrivilege + AccessPolicy (Recommended for greenfield)\n"
-    printf "(b) AccessCredential + AccessPolicy — cred is new, no privilege needed\n"
-    printf "(c) AccessPolicy only — references existing cred/privilege by id or name\n"
-    printf "(d) Single resource — cred only, privilege only, or policy only\n\n"
-    printf "3. Deployment (Terraform only -- skip it for Kubernetes, where the deployment is\n"
-    printf "   implicit; on Terraform deployment_ids is REQUIRED on every credential and policy):\n"
-    printf "(a) Manage it here — declare a hush_deployment resource alongside\n"
-    printf "(b) Look it up — data \"hush_deployment\" by name\n"
-    printf "(c) I have the dep- id and will paste it\n\n"
-    printf "4. Policy name (free-form; default: pg-app-policy).\n\n"
-    printf "5. Attestation pattern (multi-select; pick one or more):\n"
-    printf "(a) k8s:ns + k8s:sa — match by namespace + service account (Recommended for K8s workloads)\n"
-    printf "(b) k8s:ns only — match all workloads in a namespace\n"
-    printf "(c) k8s:pod-label — match by pod label key+value\n"
-    printf "(d) k8s:pod-name — match a specific pod\n"
-    printf "(e) k8s:container-name — match a specific container\n\n"
-    printf "6. Delivery type (pick one):\n"
-    printf "(a) env template — single env var like DATABASE_URL from the connection-string template (Recommended for DB types)\n"
-    printf "(b) env split — one env var per credential field (e.g. PG_USER, PG_PASSWORD)\n"
-    printf "(c) volume — write fields to files at a mount point\n"
-    printf "(d) sdk — fetched at runtime via the Hush SDK\n\n"
-    printf "7. enabled management (Kubernetes only -- skip it for Terraform, where enabled\n"
-    printf "   defaults to true and is always reconciled):\n"
-    printf "(a) Toggle outside K8s — omit spec.enabled so Hush API/UI/Terraform can flip it without operator drift (Recommended)\n"
-    printf "(b) Reconcile in K8s — set spec.enabled: true and let the operator restore drift on this field too\n\n"
-    printf "Reply with: 1: <a|b>, 2: <a|b|c|d>, 3: <a|b|c> (Terraform only), 4: <name>,\n"
-    printf "5: <letters, e.g. a or a,c>, 6: <a|b|c|d>, 7: <a|b> (Kubernetes only).\n"
-    printf "Skip the number that does not apply to the target picked in 1.\n"
-    printf "\`\`\`\n\n"
-    printf "Two things the example above does not show, because its prompt pins the type:\n"
-    printf "if the user's prompt does NOT name a credential type, ask for it in Round 1\n"
-    printf "alongside target and scope; and on the Terraform target, ask in the credential\n"
-    printf "round whether they are on Terraform 1.11 or newer, since that decides whether\n"
-    printf "secrets can use the write-only form or must land in state.\n\n"
-    printf "Once those answers come back, ask for the values they unlocked (workload\n"
-    printf "namespace + SA names, env var names, etc.) in the same\n"
-    printf "letter-labeled style if there are discrete choices, or as numbered free-form\n"
-    printf "prompts otherwise. Then continue to the credential round, then the privilege\n"
-    printf "round.\n\n"
+    prose_question_format "Opening round (the body below splits this into Rounds 1-2; Cursor has no\nquestion tool, so ask them together in one message).\n\n"
     printf "Reference files live next to this file under \`references/\`. Read\n"
     printf "\`references/kubernetes.md\` or \`references/terraform.md\` for the chosen target,\n"
     printf "and the matching \`references/<type>.md\`, before generating anything.\n\n"
     printf -- "---\n\n"
     skill_body "$skill_src/SKILL.md"
   } > "$cursor_dst/hush-uam-manifest.mdc"
+}
+
+# ─── target: tools/mcp ───────────────────────────────────────────────────────
+# The copy the Hush MCP server (lens) serves as a document to every MCP client,
+# Ask Hush included. Those clients may have no question tool, no repo and no
+# filesystem, but they do have lens's read tools over the user's org.
+
+sync_mcp() {
+  local skill_src="plugins/hush-uam/skills/hush-uam-manifest"
+  local mcp_dst="tools/mcp/hush-uam-manifest"
+
+  rm -rf "$mcp_dst"
+  mkdir -p "$mcp_dst/references"
+
+  cp -r "$skill_src/references/." "$mcp_dst/references/"
+
+  # Not the canonical description: that one is written for Claude Code's skill
+  # matching ("whenever the user asks about Hush"), which over-triggers on a
+  # server where everything is about Hush.
+  {
+    cat <<'EOF'
+---
+name: hush-uam-manifest
+description: Guided workflow for writing Hush UAM resources (AccessCredential, AccessPrivilege, AccessPolicy) as Kubernetes manifests for the hush-uam operator or as Terraform for the hushsecurity/hush provider. Read it when the user wants to set up brokered access for a workload as code, asks for k8s YAML or Terraform for a Hush credential, privilege or policy, or asks how to move a workload off a static secret.
+---
+
+## Reading this through the Hush MCP server
+
+This guide is served as a document by the Hush MCP server. It was written as a Claude Code
+skill, so it assumes a question tool, the user's repo and a filesystem, none of which you
+may have. Where this section and the guide below disagree, this section wins.
+
+### Questions
+
+If you have a structured-question tool (Claude Code's `AskUserQuestion` or similar), use it
+as the guide says. If you don't, then wherever the guide says "use `AskUserQuestion`" or
+"batch up to 4 structured questions", ask in prose using the **exact** format below.
+
+EOF
+    prose_question_format "Opening round (the body below splits this into Rounds 1-2; without a question\ntool, ask them together in one message).\n\n"
+    cat <<'EOF'
+### No repository
+
+The guide reads several things from the user's repo: the target (Terraform or Kubernetes),
+whether a `provider "hush"` block exists (which decides whether to ask the realm), and
+whether a `hush_deployment` is already declared. If you can't see the user's files, don't
+guess: ask. For the target, Step 1's "Both, or neither → ask" applies; on Terraform, ask
+whether they already have a `provider "hush"` block and a `hush_deployment`.
+
+### Output
+
+If you can't write files, deliver each file as a fenced code block in your reply, headed
+by the file name you suggest (`hush-postgres.yaml`, `hush.tf`). The required-permissions
+block and the post-generation note follow, as the guide says.
+
+### Look things up instead of asking
+
+This server also has read-only tools over the user's Hush organization. Use them to turn
+open questions into choices from real data:
+
+- `suggest_access_policies` — proposals derived from workloads still using a static
+  secret, each with the attestation criteria that match those workloads. When the user
+  wants a policy for a type, check for a suggestion first and offer its criteria as the
+  recommended option.
+- `get_access_credentials` — existing credentials, filterable by `type`, with their names,
+  ids and deployment ids. Use it when the scope references an existing credential, and to
+  offer the deployment ids already in use when Terraform needs one.
+- `get_access_privileges` — existing privileges, for a policy that references one.
+- `get_access_policies` — existing policies, to avoid name clashes and to show how similar
+  access is already configured.
+
+These tools show what exists in Hush, not what is in the user's repo or cluster: a
+credential that exists in Hush may not be managed by their Terraform or manifests.
+Reference it by id or name as the guide describes rather than declaring it again. They
+never return secret values.
+
+This server has no tools that create UAM resources. The guide produces code for the user
+to apply; don't offer to create the resources yourself.
+
+### Reference files and maintainer notes
+
+Links like `references/postgres.md` point to documents served next to this one. Read them
+with the tool you use to read this server's documents. Don't build a document's address from
+the link: the server normalizes names (lowercase, `_` becomes `-`, no `.md`), so
+`references/aws_wif.md` is listed as `.../references/aws-wif`. Find it in the server's
+document listing. The rule to read the target and type reference before writing anything
+still holds.
+
+Skip the "Adding a new type" section: it is for maintainers of this guide.
+
+---
+
+EOF
+    skill_body "$skill_src/SKILL.md"
+  } > "$mcp_dst/SKILL.md"
 }
 
 # ─── future tools ────────────────────────────────────────────────────────────
@@ -174,6 +274,7 @@ if [[ "$CHECK_MODE" -eq 1 ]]; then
   trap 'rm -rf "$TMPDIR"' EXIT
   cp -r tools "$TMPDIR/tools-before"
   sync_cursor
+  sync_mcp
   if ! diff -ruN "$TMPDIR/tools-before" tools >/dev/null; then
     echo "tools/ is out of sync with canonical content."
     echo "Run scripts/sync-tools.sh and commit the result."
@@ -185,4 +286,5 @@ if [[ "$CHECK_MODE" -eq 1 ]]; then
 fi
 
 sync_cursor
-echo "Synced tools/cursor/ from canonical."
+sync_mcp
+echo "Synced tools/cursor/ and tools/mcp/ from canonical."
