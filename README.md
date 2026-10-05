@@ -46,7 +46,7 @@ See [`tools/cursor/README.md`](tools/cursor/README.md) for capability caveats (C
 
 ### Hush MCP server
 
-A copy for the Hush MCP server to serve as a document is generated into [`tools/mcp/`](tools/mcp/), so Ask Hush in the Hush portal can run the same interview. It isn't published yet. See [`tools/mcp/README.md`](tools/mcp/README.md) for how that copy differs.
+A copy for the Hush MCP server to serve as a document is generated into [`tools/mcp/`](tools/mcp/), so Ask Hush in the Hush portal can run the same interview. Lens bakes it into its image at build time. See [`tools/mcp/README.md`](tools/mcp/README.md) for how that copy differs.
 
 ### Other AI tools
 
