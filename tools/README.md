@@ -7,6 +7,7 @@ This directory holds wrappers that adapt Hush agent skills for AI agents *other*
 | Tool | Wrapper | Notes |
 |---|---|---|
 | Cursor | [`cursor/`](cursor/) | Project-rule wrapper. Generated from canonical by `scripts/sync-tools.sh`. |
+| Hush MCP server (lens) | [`mcp/`](mcp/) | Served as a document to every lens client, Ask Hush included. Generated from canonical by `scripts/sync-tools.sh`. |
 
 The canonical implementation is the Claude Code skill at [`../plugins/hush-uam/skills/hush-uam-manifest/`](../plugins/hush-uam/skills/hush-uam-manifest/). Skill content is plain Markdown and can be consumed by any LLM-driven editor; this directory hosts concrete, ready-to-install wrappers for non-Claude-Code agents.
 
