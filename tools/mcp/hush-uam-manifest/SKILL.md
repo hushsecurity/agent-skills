@@ -48,68 +48,16 @@ as the guide says. If you don't, then wherever the guide says "use `AskUserQuest
 - **Asking values across resource boundaries.** Don't ask credential field
    values in the same round as policy attestation values.
 
-### Worked example — copy this format verbatim
+### Rounds
 
-When the user prompts "I want a policy for postgres", your first message should
-look exactly like this (option *contents* will vary by type, but the *format* is
-fixed):
+Keep the guide's rounds (its "Batching strategy"): at most 4 questions per message, one
+resource at a time. This overrides rule 1 above, which would put a whole resource in one
+message. A long list of questions is hard to answer in a chat.
 
-```
-Opening round (the body below splits this into Rounds 1-2; without a question
-tool, ask them together in one message).
-
-1. Target (pick one):
-(a) Kubernetes — CRD manifests for the hush-uam operator (Recommended if the repo has k8s manifests)
-(b) Terraform — HCL for the hushsecurity/hush provider
-
-2. Scope (pick one):
-(a) Full trio — AccessCredential + AccessPrivilege + AccessPolicy (Recommended for greenfield)
-(b) AccessCredential + AccessPolicy — cred is new, no privilege needed
-(c) AccessPolicy only — references existing cred/privilege by id or name
-(d) Single resource — cred only, privilege only, or policy only
-
-3. Deployment (Terraform only -- skip it for Kubernetes, where the deployment is
-   implicit; on Terraform deployment_ids is REQUIRED on every credential and policy):
-(a) Manage it here — declare a hush_deployment resource alongside
-(b) Look it up — data "hush_deployment" by name
-(c) I have the dep- id and will paste it
-
-4. Policy name (free-form; default: pg-app-policy).
-
-5. Attestation pattern (multi-select; pick one or more):
-(a) k8s:ns + k8s:sa — match by namespace + service account (Recommended for K8s workloads)
-(b) k8s:ns only — match all workloads in a namespace
-(c) k8s:pod-label — match by pod label key+value
-(d) k8s:pod-name — match a specific pod
-(e) k8s:container-name — match a specific container
-
-6. Delivery type (pick one):
-(a) env template — single env var like DATABASE_URL from the connection-string template (Recommended for DB types)
-(b) env split — one env var per credential field (e.g. PG_USER, PG_PASSWORD)
-(c) volume — write fields to files at a mount point
-(d) sdk — fetched at runtime via the Hush SDK
-
-7. enabled management (Kubernetes only -- skip it for Terraform, where enabled
-   defaults to true and is always reconciled):
-(a) Toggle outside K8s — omit spec.enabled so Hush API/UI/Terraform can flip it without operator drift (Recommended)
-(b) Reconcile in K8s — set spec.enabled: true and let the operator restore drift on this field too
-
-Reply with: 1: <a|b>, 2: <a|b|c|d>, 3: <a|b|c> (Terraform only), 4: <name>,
-5: <letters, e.g. a or a,c>, 6: <a|b|c|d>, 7: <a|b> (Kubernetes only).
-Skip the number that does not apply to the target picked in 1.
-```
-
-Two things the example above does not show, because its prompt pins the type:
-if the user's prompt does NOT name a credential type, ask for it in Round 1
-alongside target and scope; and on the Terraform target, ask in the credential
-round whether they are on Terraform 1.11 or newer, since that decides whether
-secrets can use the write-only form or must land in state.
-
-Once those answers come back, ask for the values they unlocked (workload
-namespace + SA names, env var names, etc.) in the same
-letter-labeled style if there are discrete choices, or as numbered free-form
-prompts otherwise. Then continue to the credential round, then the privilege
-round.
+When every question in a round has a `(Recommended)` option, add a line after the reply
+template: "Or reply `ok` to take the recommended options." This is the guide's `defaults`
+shortcut, so it never covers values without a default: the host, the workload's namespace
+and service account, or the deployment on Terraform.
 
 ### No repository
 

@@ -48,9 +48,9 @@ skill_description() {
   ' "$1"
 }
 
-# The prose question format, for agents without a structured-question tool.
-# $1 is the example's opening line, which names why the rounds are merged.
-prose_question_format() {
+# The prose question format, for agents without a structured-question tool:
+# the rules, then a worked example that merges the guide's first two rounds.
+prose_question_rules() {
   printf "### Required format\n\n"
   printf "1. Group questions by resource (policy / credential / privilege). Ask all\n"
   printf "   questions for one resource in a single message before moving to the next.\n"
@@ -80,6 +80,10 @@ prose_question_format() {
   printf "  not free-form prose answers.\n"
   printf -- "- **Asking values across resource boundaries.** Don't ask credential field\n"
   printf "   values in the same round as policy attestation values.\n\n"
+}
+
+# $1 is the example's opening line, which names why the rounds are merged.
+prose_question_example() {
   printf "### Worked example — copy this format verbatim\n\n"
   printf "When the user prompts \"I want a policy for postgres\", your first message should\n"
   printf "look exactly like this (option *contents* will vary by type, but the *format* is\n"
@@ -158,7 +162,8 @@ sync_cursor() {
     printf "questions\", you MUST ask via prose using the **exact** format below. The user has\n"
     printf "been told to expect it; deviating makes their reply ambiguous and the\n"
     printf "manifest-generation step will fail.\n\n"
-    prose_question_format "Opening round (the body below splits this into Rounds 1-2; Cursor has no\nquestion tool, so ask them together in one message).\n\n"
+    prose_question_rules
+    prose_question_example "Opening round (the body below splits this into Rounds 1-2; Cursor has no\nquestion tool, so ask them together in one message).\n\n"
     printf "Reference files live next to this file under \`references/\`. Read\n"
     printf "\`references/kubernetes.md\` or \`references/terraform.md\` for the chosen target,\n"
     printf "and the matching \`references/<type>.md\`, before generating anything.\n\n"
@@ -204,8 +209,19 @@ as the guide says. If you don't, then wherever the guide says "use `AskUserQuest
 "batch up to 4 structured questions", ask in prose using the **exact** format below.
 
 EOF
-    prose_question_format "Opening round (the body below splits this into Rounds 1-2; without a question\ntool, ask them together in one message).\n\n"
+    prose_question_rules
     cat <<'EOF'
+### Rounds
+
+Keep the guide's rounds (its "Batching strategy"): at most 4 questions per message, one
+resource at a time. This overrides rule 1 above, which would put a whole resource in one
+message. A long list of questions is hard to answer in a chat.
+
+When every question in a round has a `(Recommended)` option, add a line after the reply
+template: "Or reply `ok` to take the recommended options." This is the guide's `defaults`
+shortcut, so it never covers values without a default: the host, the workload's namespace
+and service account, or the deployment on Terraform.
+
 ### No repository
 
 The guide reads several things from the user's repo: the target (Terraform or Kubernetes),
