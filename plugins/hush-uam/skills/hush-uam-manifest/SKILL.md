@@ -67,9 +67,13 @@ the user.
 
 ### Kubernetes
 
-- **Gated fields** (`remoteName`) fail at **apply** time — the CRD doesn't know the field,
-  so `kubectl apply` itself errors. You can avoid this by offering a different manifest
-  shape.
+- **Gated fields** (`remoteName`, `priority`) need the chart's CRDs. On older CRDs
+  `kubectl apply` refuses them, and a client that skips field validation silently drops
+  them. For `remoteName` you can avoid this by offering a different manifest shape. For
+  `priority`, below its floor, offer criteria that do not overlap instead -- for example a
+  label that only the broad policy's workloads carry -- and when none fits, leave it out
+  and say that the overlap stays unsettled. `priority` also fails silently with new CRDs
+  and the operator of an older chart; see [`references/kubernetes.md`](references/kubernetes.md).
 - **Gated `type`/`engine` values** fail at **reconcile** time — the CRD accepts them and
   the Hush API rejects the create afterwards. There is no alternative shape here, so
   generate what the user asked for and warn.
@@ -91,18 +95,22 @@ plainly what was asked for and why it changed.
 | `azure_wif` credential type | — | 0.14.0 |
 | `redis` engine `elasticache` | — | 0.14.0 |
 | `rabbitmq` `auto_rotate_root` | — | 0.19.1 |
+| a non-zero policy `priority` | — | 0.29.0 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
 
 Every other credential type needs `hush-am` >= 0.13.0, the baseline. A `—` in the
-hush-uam column means there is no separate operator floor — the API enforces it against
-the access-manager version alone. Those rows apply to both targets **except** the two
+hush-uam column means the chart version alone is the floor: the API enforces it against
+the access-manager version, and for `priority` the same chart also ships the CRDs and the
+operator that Kubernetes needs. Those rows apply to both targets **except** the two
 marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
 
 ### Terraform
 
 - **Terraform >= 1.11** for the write-only secret pattern (`<field>_wo`). The provider
   itself declares `>= 1.3`; on an older Terraform the user must accept secrets in state.
+- `priority` on `hush_access_policy` needs provider 1.28.0 or later; see
+  [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
   quoting its version at them describes a requirement they do not have. These floors are
@@ -219,6 +227,18 @@ be asked individually; never silently fill them in.
   - **Immediately after**, ask the item-level details the choice unlocks: one env var name
     per field, or the single var name for a template, or mount point + file paths, or the
     SDK secret name + key names, or the WIF role/pool details.
+- **Priority** -- *only when this policy overlaps another one*: both can match the same
+  workload and deliver the same environment variable, file or cloud identity.
+  Look for it in the prompt (a canary, a dev workload, "only these pods get a different
+  URL") and in policies the repo already declares that deliver the same name. Ask which of
+  the two should win and give that one a higher value such as `10`. The other one stays
+  at 0: on Terraform that is the default, on Kubernetes write `priority: 0` so that the
+  operator holds it there. See [Overlapping policies](#overlapping-policies). Otherwise
+  omit it and do not ask.
+  - **Version floor** -- when you do set it, ask whether the deployment meets the
+    `priority` floor in [Compatibility](#compatibility); on Terraform also check the
+    provider release, see [`references/terraform.md`](references/terraform.md). Below a
+    floor, follow the Compatibility rule for `priority` rather than emitting it.
 - **`enabled`** — **target-dependent, and the advice is opposite.**
   - *Kubernetes:* default to omitting it, which opts out of drift correction.
   - *Terraform:* it defaults to `true` and is always reconciled; there is no opt-out. Don't
@@ -268,7 +288,9 @@ with another resource's questions in between.** A typical trio:
   exists once Terraform is confirmed.
 - **Round 2 — policy structural**: policy name, attestation pattern, delivery type, and
   `enabled` on Kubernetes. Four on Kubernetes, three on Terraform.
-- **Round 3 — policy values**: workload namespace + SA names, per-item delivery details.
+- **Round 3 — policy values**: workload namespace + SA names, per-item delivery details,
+  and `priority` with its floor when the policy overlaps another one. Split it across two
+  calls when that exceeds 4.
 - **Round 4 — credential**: name, type-specific structural choice, field values, secret
   handling, secret store (Terraform), and the Terraform >= 1.11 probe if secrets are
   involved. This exceeds 4 — split it across two calls.
@@ -292,6 +314,28 @@ Five types, identical on both targets:
 At least one is required. `key` is required **if and only if** the type is
 `k8s:pod-label` — supplying it on any other type is an error. Note that the namespace here
 is the *workload's*, which on Kubernetes is almost never `hush-security`.
+
+## Overlapping policies
+
+A workload can match several policies. Criteria are ANDed within a policy, every policy
+whose criteria all match applies, and there is no negation: no criterion says "namespace
+is not X". When two matching policies deliver the same environment variable, file path
+or cloud identity, `priority` decides which one does: the higher value wins. It takes
+0..1000 and defaults to 0. Between equal priorities the winner is arbitrary, so never
+rely on it.
+
+The usual shape is a broad policy and a narrower override. The broad one stays at 0; the
+override adds a criterion, such as a `k8s:pod-label` or a `k8s:sa`, and a
+priority such as `10`. A priority changes nothing for a workload that only one policy
+matches.
+
+Environment variables and files are delivered when a pod starts, so a pod that is already
+running keeps what it got until it restarts.
+
+An SDK secret follows the priority only between policies with identical attestation
+criteria. With different criteria -- the usual broad policy and narrower override -- the
+workload holds a separate identity for each policy, and the SDK takes whichever answers
+first. For two `sdk` policies that overlap, offer criteria that do not overlap instead.
 
 ## Types that don't take privileges
 
@@ -480,6 +524,8 @@ These are enforced by the Hush API on both targets:
   `k8s:sa`.
 - Delivery name and path rules as listed under "Delivery modes".
 - Template variables must name real fields on the credential.
+- `priority` takes 0..1000, and a non-zero one is refused on a deployment whose access
+  manager is below its [Compatibility](#compatibility) floor.
 
 Per-target gotchas — the Kubernetes ones (namespace, `keyMappings`, ref forms) are in
 [`references/kubernetes.md`](references/kubernetes.md); the Terraform ones are in

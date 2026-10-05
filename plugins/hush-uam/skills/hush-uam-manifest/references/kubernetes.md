@@ -91,6 +91,7 @@ spec:
   name: <display-name>
   description: <optional>
   # enabled: true                 # OPTIONAL — see "How enabled interacts with drift correction"
+  # priority: 10                  # OPTIONAL -- 0..1000, only for an overlap; see SKILL.md
   accessCredentialRef:            # exactly one of `name`, `id`, or `remoteName`+`type`
     name: <cred-cr-name>
   accessPrivilegeRefs:            # OMIT for types that don't take privileges
@@ -164,8 +165,9 @@ secretRef:
 
 The Hush operator reconciles the policy on the platform back to whatever the manifest
 declares — if someone changes a managed field via the Hush API, UI, or Terraform, the
-operator restores it. **`enabled` is the one field this can be opted out of**, because
-flipping a policy on/off is often an operational action (e.g. on-call temporarily disabling
+operator restores it. **`enabled` and `priority` are the only fields this can be opted
+out of.** For `enabled` that matters because flipping a policy on/off is often an
+operational action (e.g. on-call temporarily disabling
 a misbehaving policy) that shouldn't fight the controller.
 
 The rule is based on whether `spec.enabled` is present in the manifest:
@@ -188,6 +190,12 @@ declarative on/off control.
 
 **This is Kubernetes-only.** In Terraform `enabled` is a plain boolean defaulting to `true`
 and is always reconciled; there is no opt-out. Do not carry this advice across targets.
+
+`priority` follows the same rule: omitted, the operator leaves the value in Hush UAM
+alone. So removing `priority` from a manifest does **not** reset it to 0; write
+`priority: 0` for that. Emit `priority` only when the policy overlaps another one, as
+SKILL.md describes, and then on both of them: `priority: 0` on the one that should lose,
+so that the operator holds it there.
 
 ## Referencing credentials and privileges
 
@@ -426,6 +434,13 @@ These are on top of the shared rules in SKILL.md:
 - **`plaintext` with a multi-entry Secret and no `keyMappings` → sync error.** Pick the
   entry with `keyMappings: {secret: <key>}`.
 - **`spec.config.foreign_id` → refused.** The controller sets it itself.
+- **`priority` needs chart `hush-am` >= 0.29.0**, its CRDs and its operator; older CRDs
+  reject it at **apply**. Add it to a manifest only once the whole upgrade has finished,
+  CRDs and operator: a priority set while the operator of an older chart still runs can be
+  dropped from the stored policy, or never reach Hush UAM, and nothing reports it. To
+  recover one set too early, re-apply the manifest after the upgrade together with another
+  change to the policy's `spec` -- bumping `spec.description` is enough. The same manifest
+  alone changes nothing: the operator skips a CR whose generation it has already synced.
 
 ## Example: Postgres trio
 

@@ -276,6 +276,9 @@ def check_floors(skill_md: str, midgard: Path) -> None:
         "an extended secret-store prefix": re.search(
             r'HUSH_EXTENDED_PREFIX_MIN_AM_VERSION", "([\d.]+)"', helpers
         ),
+        "a non-zero policy `priority`": re.search(
+            r'HUSH_POLICY_PRIORITY_MIN_AM_VERSION", "([\d.]+)"', helpers
+        ),
     }
     for label, m in sources.items():
         check(m is not None, f"could not find midgard's floor for {label}")
@@ -290,6 +293,43 @@ def check_floors(skill_md: str, midgard: Path) -> None:
                 row.group(1) == m.group(1),
                 f"{label} floor mismatch",
                 f"skill says {row.group(1)}, midgard says {m.group(1)}",
+            )
+
+
+def check_priority_range(skill_md: str, midgard: Path, provider: Path, helm: Path) -> None:
+    """The `priority` range SKILL.md states, against the API, the CRD and the provider."""
+    m = re.search(r"^## Overlapping policies$.*?It takes\s+(\d+)\.\.(\d+)", skill_md, re.S | re.M)
+    check(m is not None, "SKILL.md does not state the priority range")
+    if m is None:
+        return
+    stated = m.groups()
+    sources = {
+        "midgard": (
+            midgard,
+            "midgard/common/definitions.py",
+            r"PolicyPriority = Annotated\[int, Field\(ge=(\d+), le=(\d+)\)\]",
+        ),
+        "the AccessPolicy CRD": (
+            helm,
+            "charts/hush-am/crds/access-policy.yaml",
+            r"\n {16}priority:\n(?: {18}.*\n)*? {18}minimum: (\d+)\n {18}maximum: (\d+)\n",
+        ),
+        "the provider": (
+            provider,
+            "internal/provider/access_policy/common.go",
+            r'"priority": \{[^}]*?validation\.IntBetween\((\d+), (\d+)\)',
+        ),
+    }
+    for label, (repo, path, pat) in sources.items():
+        if not repo.is_dir():
+            continue
+        found = re.search(pat, git_show(repo, path) or "")
+        check(found is not None, f"could not find the priority range in {label}")
+        if found is not None:
+            check(
+                found.groups() == stated,
+                f"priority range disagrees with {label}",
+                f"skill says {'..'.join(stated)}, {label} says {'..'.join(found.groups())}",
             )
 
 
@@ -396,6 +436,18 @@ def check_operator(skill_md: str, k8s_md: str, mufasa: Path) -> None:
             "kubernetes.md does not name the controller-owned config field",
             m.group(1),
         )
+
+    check(
+        re.search(r'Priority\s+\*int32\s+`json:"priority,omitempty"`', types_go) is not None,
+        "AccessPolicySpec has no optional `priority`",
+        "kubernetes.md documents it",
+    )
+    check(
+        re.search(r'if spec\.Priority != nil \{\s*body\["priority"\] = \*spec\.Priority', helpers_go)
+        is not None,
+        "buildPolicyBody does not send `priority` only when it is set",
+        "kubernetes.md says an omitted priority leaves the value in Hush UAM alone",
+    )
 
     # The plaintext rule: a single-entry Secret needs no keyMappings, more is an error.
     check(
@@ -547,6 +599,8 @@ def main() -> int:
         check_chart(skill_md, args.helm_charts)
     else:
         print(f"skipping chart checks: {args.helm_charts} not found", file=sys.stderr)
+
+    check_priority_range(skill_md, args.midgard, args.provider, args.helm_charts)
 
     if failures:
         print(f"{len(failures)} of {checked} claims failed:\n")

@@ -364,6 +364,22 @@ defaulting to `true`, and Terraform always reconciles it. There is no way to dec
 policy while leaving enable/disable to the console — flipping it there produces drift that
 the next `terraform apply` reverts. Do not tell the user otherwise.
 
+## `priority`
+
+An optional number, 0..1000, defaulting to 0; the range is checked at plan time. Set it
+only on a policy that overlaps another one, as SKILL.md describes under *Overlapping
+policies*.
+
+Removing `priority` from the configuration sets it back to 0. That is the opposite of
+Kubernetes, where omitting it leaves the value alone, so do not carry that advice across.
+
+It arrived in provider 1.28.0; in 1.27 and older the argument does not exist and the
+plan fails. A `.terraform.lock.hcl` that pins 1.27 or older keeps the old provider
+whatever the `version` constraint says, so tell the user to run
+`terraform init -upgrade`. A non-zero priority also needs the deployment's access
+manager at the floor in SKILL.md's Compatibility table, which the API checks at
+`terraform apply`.
+
 ## The provider validates far less than the CRD
 
 `hush_access_policy` has **no `CustomizeDiff` and no cross-field validators**. These rules
@@ -387,8 +403,8 @@ are real and enforced — but only by the API, at `terraform apply`, after a cle
 
 What the provider *does* check client-side: the attestation `type` enum, `subject_kind`
 enum, delivery `type` enum, the sdk name regex and length, `^dep-` on deployment IDs,
-name/description lengths, the delivery-block `ExactlyOneOf`, and the secret-store prefix
-rules.
+name/description lengths, the `priority` range, the delivery-block `ExactlyOneOf`, and
+the secret-store prefix rules.
 
 ## Provider gaps to warn the user about
 
