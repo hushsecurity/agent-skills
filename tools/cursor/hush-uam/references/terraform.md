@@ -16,7 +16,7 @@ terraform {
   required_providers {
     hush = {
       source  = "hushsecurity/hush"
-      version = "~> 1.24"
+      version = "~> 1.27"
     }
   }
 }
@@ -45,8 +45,8 @@ variable "hush_api_key_secret" {
   at plan time.
 - The repo's own examples pin no version. **Always emit a `version` constraint** — the
   provider adds resources and arguments regularly, and an unpinned `source` silently
-  upgrades. Note what the operator means: `~> 1.24` is `>= 1.24.0, < 2.0.0`, so minor
-  releases still arrive. Use `~> 1.24.0` to hold at 1.24 patch releases.
+  upgrades. Note what the operator means: `~> 1.27` is `>= 1.27.0, < 2.0.0`, so minor
+  releases still arrive. Use `~> 1.27.0` to hold at 1.27 patch releases.
 - **If the repo already declares `hush` in a `required_providers` block, do not emit a
   second one.** Terraform rejects two declarations of the same provider with
   `Duplicate required providers configuration`, even across files. Add the `version` to
@@ -227,13 +227,12 @@ argument is optional and exists on every credential resource.
   `gcp_sm` takes `prefix` + `project_id`; `k8s_secrets` takes `prefix` (optional
   `namespace`, defaulting to the access-manager namespace).
 
-> ⚠️ **Version-sensitive.** The per-kind prefix rules below are in the provider's
-> `[Unreleased]` section — they are **not** in 1.24.x. On 1.24.x the validator is a single
-> `^[a-z][a-z0-9]{0,9}$` for every kind, so a segmented prefix like `hush/prod` is refused
-> at **plan** time. Use a plain `prefix = "hush"` unless you know the user is on a release
-> that carries HUSH-7027.
+> ⚠️ **Version-sensitive.** The per-kind prefix rules below arrived in provider **1.25.0**.
+> Before it the validator is a single `^[a-z][a-z0-9]{0,9}$` for every kind, so a segmented
+> prefix like `hush/prod` is refused at **plan** time. If the user pins an older provider,
+> use a plain `prefix = "hush"`.
 
-Once released, `prefix` is validated at plan time per backend — lowercase, each segment
+`prefix` is validated at plan time per backend — lowercase, each segment
 starts and ends alphanumeric, `-` allowed everywhere, `.` may not repeat. The 80-character
 maximum is **not** checked by the provider; the API enforces it:
 
