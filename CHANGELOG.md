@@ -12,7 +12,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- `tools/mcp/`: ask in the guide's own rounds, at most 4 questions per message, instead of merging the first two rounds into one long message as the Cursor copy does. A round where every question has a recommended option can be answered with `ok`. Tested in Ask Hush, where the merged opening round came to 8 or 9 questions.
+- `tools/mcp/`: drop the interview mechanics. The copy no longer prescribes a question format, rounds or a reply shortcut, and the body loses *How to ask*, the `defaults` shortcut, *Batching strategy* and *Adding a new type*. In Ask Hush those rules produced 8 or 9 questions in one message, then a reply shortcut that picked a value the guide says to always ask. The agent now asks in its own way, under one kept rule: never invent a value the guide gives no default for.
 
 ### Fixed
 

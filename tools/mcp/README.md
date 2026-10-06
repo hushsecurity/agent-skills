@@ -9,12 +9,14 @@ by [`scripts/sync-tools.sh`](../../scripts/sync-tools.sh). Don't edit it directl
 
 ## What the wrapper changes
 
-The body and references are the canonical skill, unchanged. The generated `SKILL.md`
-replaces the frontmatter `description` and puts a preamble in front of the body, because
-an MCP client may lack what the skill assumes:
+The references are the canonical skill's, unchanged. The generated `SKILL.md` replaces
+the frontmatter `description`, drops the body's interview mechanics (*How to ask*, the
+`defaults` shortcut, *Batching strategy*) and its maintainer notes (*Adding a new type*),
+and puts a preamble in front, because an MCP client may lack what the skill assumes:
 
-- **No question tool.** Use one if present; otherwise ask in the same lettered prose
-  format the Cursor wrapper uses.
+- **No question tool.** The agent asks the way it would in any conversation; the guide's
+  inputs and their order are what it needs. The one rule kept: never invent a value the
+  guide gives no default for.
 - **No repo.** Ask for what the skill would infer from the repo: the target, and on
   Terraform whether a `provider "hush"` block and a `hush_deployment` exist.
 - **No filesystem.** Deliver files as fenced code blocks.
