@@ -177,6 +177,18 @@ sync_cursor() {
 # Ask Hush included. Those clients may have no question tool, no repo and no
 # filesystem, but they do have lens's read tools over the user's org.
 
+# Drop the sections the MCP copy doesn't need: how to run the interview through
+# Claude Code's question tool, and the maintainers' notes. Each runs to the next
+# heading of level 1-3.
+strip_sections() {
+  awk '
+    /^### How to ask/ || /^### `defaults` shortcut/ || /^### Batching strategy/ ||
+    /^## Adding a new type/ { skip = 1; next }
+    skip && /^#{1,3} / { skip = 0 }
+    !skip
+  '
+}
+
 sync_mcp() {
   local skill_src="plugins/hush-uam/skills/hush-uam-manifest"
   local mcp_dst="tools/mcp/hush-uam-manifest"
@@ -200,27 +212,11 @@ description: Guided workflow for writing Hush UAM resources (AccessCredential, A
 
 This guide is served as a document by the Hush MCP server. It was written as a Claude Code
 skill, so it assumes a question tool, the user's repo and a filesystem, none of which you
-may have. Where this section and the guide below disagree, this section wins.
+may have. Where it says to ask with `AskUserQuestion`, just ask. Where this section and the
+guide below disagree, this section wins.
 
-### Questions
-
-If you have a structured-question tool (Claude Code's `AskUserQuestion` or similar), use it
-as the guide says. If you don't, then wherever the guide says "use `AskUserQuestion`" or
-"batch up to 4 structured questions", ask in prose using the **exact** format below.
-
-EOF
-    prose_question_rules
-    cat <<'EOF'
-### Rounds
-
-Keep the guide's rounds (its "Batching strategy"): at most 4 questions per message, one
-resource at a time. This overrides rule 1 above, which would put a whole resource in one
-message. A long list of questions is hard to answer in a chat.
-
-When every question in a round has a `(Recommended)` option, add a line after the reply
-template: "Or reply `ok` to take the recommended options." This is the guide's `defaults`
-shortcut, so it never covers values without a default: the host, the workload's namespace
-and service account, or the deployment on Terraform.
+Never invent a value the guide gives no default for, such as a host, the workload's
+namespace and service account, or the Terraform deployment: ask for it.
 
 ### No repository
 
@@ -260,7 +256,7 @@ never return secret values.
 This server has no tools that create UAM resources. The guide produces code for the user
 to apply; don't offer to create the resources yourself.
 
-### Reference files and maintainer notes
+### Reference files
 
 Links like `references/postgres.md` point to documents served next to this one. Read them
 with the tool you use to read this server's documents. Don't build a document's address from
@@ -269,12 +265,10 @@ the link: the server normalizes names (lowercase, `_` becomes `-`, no `.md`), so
 document listing. The rule to read the target and type reference before writing anything
 still holds.
 
-Skip the "Adding a new type" section: it is for maintainers of this guide.
-
 ---
 
 EOF
-    skill_body "$skill_src/SKILL.md"
+    skill_body "$skill_src/SKILL.md" | strip_sections
   } > "$mcp_dst/SKILL.md"
 }
 

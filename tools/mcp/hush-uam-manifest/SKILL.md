@@ -7,57 +7,11 @@ description: Guided workflow for writing Hush UAM resources (AccessCredential, A
 
 This guide is served as a document by the Hush MCP server. It was written as a Claude Code
 skill, so it assumes a question tool, the user's repo and a filesystem, none of which you
-may have. Where this section and the guide below disagree, this section wins.
+may have. Where it says to ask with `AskUserQuestion`, just ask. Where this section and the
+guide below disagree, this section wins.
 
-### Questions
-
-If you have a structured-question tool (Claude Code's `AskUserQuestion` or similar), use it
-as the guide says. If you don't, then wherever the guide says "use `AskUserQuestion`" or
-"batch up to 4 structured questions", ask in prose using the **exact** format below.
-
-### Required format
-
-1. Group questions by resource (policy / credential / privilege). Ask all
-   questions for one resource in a single message before moving to the next.
-2. Number the questions `1.`, `2.`, `3.`, ...
-3. For each question with discrete options, **place the label `(a)`, `(b)`, `(c)`,
-   ... at the very start of each option line, with no leading bullet or hyphen.**
-   The label is the visual anchor, not decoration on a bullet list.
-4. **Enumerate EVERY valid option.** Do not stop at 2-3 examples. If there are 5
-   attestation criterion types, list all 5. If there are 6 delivery modes, list
-   every one the credential type admits (the three WIF modes apply only to the
-   matching WIF credential type).
-5. Each option gets a one-line description after the label, explaining what it
-   means or when to pick it.
-6. Mark recommended options with `(Recommended)` at the end of the description.
-7. For free-form values (CR names, hostnames, project IDs, env var names): state
-   the field, the expected format, and any default. Don't bury them inside an
-   option list.
-8. End the message with a literal reply template:
-   `Reply with: 1: <choice>, 2: <choice>, ...` — and use `b,d` notation for
-   multi-select questions.
-
-### Anti-patterns — do NOT do these
-
-- **Bullet hyphens without letter labels.** `- Full trio — ...` is wrong; the
-  user can't answer "the third bullet" unambiguously.
-- **Compressed option lists.** "by namespace + SA" is wrong if the underlying
-  question has 5 valid criterion types — list all of them.
-- **Inventing your own reply format.** Use `1: a, 2: pg-app-policy, 3: a,c`,
-  not free-form prose answers.
-- **Asking values across resource boundaries.** Don't ask credential field
-   values in the same round as policy attestation values.
-
-### Rounds
-
-Keep the guide's rounds (its "Batching strategy"): at most 4 questions per message, one
-resource at a time. This overrides rule 1 above, which would put a whole resource in one
-message. A long list of questions is hard to answer in a chat.
-
-When every question in a round has a `(Recommended)` option, add a line after the reply
-template: "Or reply `ok` to take the recommended options." This is the guide's `defaults`
-shortcut, so it never covers values without a default: the host, the workload's namespace
-and service account, or the deployment on Terraform.
+Never invent a value the guide gives no default for, such as a host, the workload's
+namespace and service account, or the Terraform deployment: ask for it.
 
 ### No repository
 
@@ -97,7 +51,7 @@ never return secret values.
 This server has no tools that create UAM resources. The guide produces code for the user
 to apply; don't offer to create the resources yourself.
 
-### Reference files and maintainer notes
+### Reference files
 
 Links like `references/postgres.md` point to documents served next to this one. Read them
 with the tool you use to read this server's documents. Don't build a document's address from
@@ -105,8 +59,6 @@ the link: the server normalizes names (lowercase, `_` becomes `-`, no `.md`), so
 `references/aws_wif.md` is listed as `.../references/aws-wif`. Find it in the server's
 document listing. The rule to read the target and type reference before writing anything
 still holds.
-
-Skip the "Adding a new type" section: it is for maintainers of this guide.
 
 ---
 
@@ -236,49 +188,6 @@ as a structural question for another. Worse, don't defer the values: if the user
 `k8s:ns + k8s:sa` for attestation, ask in the same round (or the very next) for the
 workload namespace and SA name.
 
-### How to ask — use `AskUserQuestion` for everything
-
-Use `AskUserQuestion` for **every** input, not just multiple-choice decisions. It always
-offers an `Other` option for free-form values, so it works equally well for metadata names,
-project IDs, hostnames and env var names. The user gets one consistent UI instead of being
-toggled between structured choices and "reply with numbers" prose.
-
-Rules:
-
-- **Always batch** up to 4 questions per call. Cap is 4 — fire a second call when there's
-  more to gather.
-- **Each question gets 2-4 named options.** Mark the most likely `(Recommended)` and put it
-  first. The tool auto-adds `Other` — don't list it yourself.
-- **For free-form fields with a sensible default** (e.g. a cred name like `gemini-prod`),
-  present the default as the recommended option and a generic alternative second.
-- **For required fields with no sensible default** (GCP `project_id`, hostnames, account
-  ARNs), don't fake a default, and don't offer an option whose label is a promise rather
-  than a value — `I'll provide it now` gets clicked, comes back as the answer, and has to
-  be asked again. Say in the question text "pick Other and type it", and list only
-  concrete options: a contextual guess (`billing` for the namespace of a billing service)
-  or a clearly marked placeholder (`db.billing.internal — placeholder, replace before
-  apply`). Don't lump these into a `defaults` shortcut.
-- **Group by resource.** All policy questions first, then credential, then privilege.
-  Within a resource, structural choices come right before the values they unlock.
-- **Skip what you already know** from the prompt — but be conservative. `type` is genuinely
-  pinned by "policy for postgres". **Scope is *not* pinned** by mentioning a policy: always
-  ask scope when a policy is involved, presenting the trio as Recommended — unless the type
-  takes no privilege or the credential already exists, in which case recommend the fitting
-  narrower scope (see *Canonical input order*) — but list the alternatives so the user can
-  opt out.
-- **Never ask which namespace the CRs go in** — it is the namespace hush-am is installed
-  in, `hush-security` in a standard installation; `references/kubernetes.md` names the one
-  evidence-based exception. The *workload's* namespace, the `k8s:ns` attestation value, is
-  a different thing and you always ask for it. (Terraform has no CR namespace; it has `deployment_ids` instead,
-  which you *do* ask about.)
-
-### `defaults` shortcut
-
-Offer a `defaults` shortcut **only** for fields that genuinely have defaults — resource
-names, attestation pattern, env var name, delivery type. Required-no-default values
-(`project_id`, `host`, the workload's namespace and SA, the deployment for Terraform) must
-be asked individually; never silently fill them in.
-
 ### Canonical input order
 
 #### 0. Meta
@@ -364,26 +273,6 @@ be asked individually; never silently fill them in.
   reference file first.
 - *Terraform:* there is **no `hush_mariadb_access_privilege`**. If the user wants a MariaDB
   privilege in Terraform, say so — it has to be created elsewhere and referenced by ID.
-
-### Batching strategy
-
-One or more `AskUserQuestion` calls per resource. **Never split a resource across rounds
-with another resource's questions in between.** A typical trio:
-
-- **Round 1 — meta**: target (if not inferred), scope, type (skip if the prompt pins it),
-  deployment (Terraform only). Four at most on the Terraform path, three on Kubernetes.
-  If the target itself has to be asked, deployment waits for the next round — it only
-  exists once Terraform is confirmed.
-- **Round 2 — policy structural**: policy name, attestation pattern, delivery type, and
-  `enabled` on Kubernetes. Four on Kubernetes, three on Terraform.
-- **Round 3 — policy values**: workload namespace + SA names, per-item delivery details.
-- **Round 4 — credential**: name, type-specific structural choice, field values, secret
-  handling, secret store (Terraform), and the Terraform >= 1.11 probe if secrets are
-  involved. This exceeds 4 — split it across two calls.
-- **Round 5 — privilege**: name, preset choice, specifics.
-
-Skip rounds that don't apply. Combine where possible (cap is 4 per call) but **never
-combine across resources**.
 
 ## Attestation criteria
 
@@ -518,27 +407,6 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 
 ¹ `mariadb` has a privilege type on Kubernetes and the API, but **Terraform has no
 `hush_mariadb_access_privilege` resource**.
-
-## Adding a new type
-
-Add `references/<type>.md` following the existing structure (Credential / Privilege /
-Required permissions on the auth principal / notes), including a `## Terraform` section if
-the argument names or enums diverge.
-
-**When checking what the API requires, read the request model, not the storage model.**
-In midgard, `midgard/api/dynamic_<type>.py` defines what a create actually accepts and is
-the contract; `midgard/inventory/<type>_access_creds.py` is the stored shape and routinely
-declares a field required that the request model defaults. Elasticsearch `port` and
-SendGrid `host` both look mandatory in the inventory model and are defaulted by the request
-model. Reading the wrong one produces a reference file that demands fields the user does
-not have to supply.
-
-Then run `scripts/check-claims.py` from the repo root. It verifies the catalog, the
-secret-optionality classification, the version floors and the documented provider gaps
-against the provider and midgard sources, and will tell you if the new type contradicts
-any of them. Add a row to the table above. If the type or one of
-its engines has a version floor, add a row to [Compatibility](#compatibility) too. No other
-files need to change.
 
 # Workflow
 
