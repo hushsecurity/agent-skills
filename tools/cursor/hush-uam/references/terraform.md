@@ -16,7 +16,7 @@ terraform {
   required_providers {
     hush = {
       source  = "hushsecurity/hush"
-      version = "~> 1.27"
+      version = "~> 1.28"
     }
   }
 }
@@ -45,8 +45,8 @@ variable "hush_api_key_secret" {
   at plan time.
 - The repo's own examples pin no version. **Always emit a `version` constraint** — the
   provider adds resources and arguments regularly, and an unpinned `source` silently
-  upgrades. Note what the operator means: `~> 1.27` is `>= 1.27.0, < 2.0.0`, so minor
-  releases still arrive. Use `~> 1.27.0` to hold at 1.27 patch releases.
+  upgrades. Note what the operator means: `~> 1.28` is `>= 1.28.0, < 2.0.0`, so minor
+  releases still arrive. Use `~> 1.28.0` to hold at 1.28 patch releases.
 - **If the repo already declares `hush` in a `required_providers` block, do not emit a
   second one.** Terraform rejects two declarations of the same provider with
   `Duplicate required providers configuration`, even across files. Add the `version` to

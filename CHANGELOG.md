@@ -16,7 +16,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
-- `hush-uam-manifest`: pin the Terraform provider at `~> 1.27`, the current release, instead of `~> 1.24`. The secret-store note no longer calls the per-kind `prefix` rules unreleased: they shipped in provider 1.25.0, and the plain-prefix advice now applies only to a provider pinned below that.
+- `hush-uam-manifest`: pin the Terraform provider at `~> 1.28`, the current release, instead of `~> 1.24`. The secret-store note no longer calls the per-kind `prefix` rules unreleased: they shipped in provider 1.25.0, and the plain-prefix advice now applies only to a provider pinned below that.
 - `hush-uam-manifest`: the interview no longer offers an `I'll provide it now` option for required fields that have no default. In a live run the option gets clicked, comes back as the answer, and the field has to be asked again. The question text now says to pick `Other` and type the value, and the listed options are concrete: a contextual guess or a clearly marked placeholder.
 
 ## [hush-uam-v0.6.0] - 2026-09-18
