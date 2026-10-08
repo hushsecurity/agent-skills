@@ -169,7 +169,7 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
   enforced by the API against the access-manager version, so they surface at
   `terraform apply` after a clean plan.
 
-Pin a provider version (`version = "~> 1.27"`); the repo's own examples do not, and an
+Pin a provider version (`version = "~> 1.28"`); the repo's own examples do not, and an
 unpinned `source` upgrades silently.
 
 ## Inputs to confirm before generating
