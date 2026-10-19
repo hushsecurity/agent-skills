@@ -171,13 +171,15 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
   itself declares `>= 1.3`; on an older Terraform the user must accept secrets in state.
 - `priority` on `hush_access_policy` needs provider 1.28.0 or later; see
   [`references/terraform.md`](references/terraform.md).
+- `all_databases` on `hush_mongodb_access_privilege` grants needs provider 1.33.0 or
+  later; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
   quoting its version at them describes a requirement they do not have. These floors are
   enforced by the API against the access-manager version, so they surface at
   `terraform apply` after a clean plan.
 
-Pin a provider version (`version = "~> 1.28"`); the repo's own examples do not, and an
+Pin a provider version (`version = "~> 1.33"`); the repo's own examples do not, and an
 unpinned `source` upgrades silently.
 
 ## Inputs to confirm before generating

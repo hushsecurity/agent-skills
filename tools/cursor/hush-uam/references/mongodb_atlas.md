@@ -40,6 +40,8 @@ config:
 
 Use `all` (lowercase) to grant every action allowed for the resource type.
 
+There is no `all_databases` here, unlike on `mongodb` grants: an Atlas grant always applies to the credential's `db_name`, and the API rejects the field.
+
 Valid privileges for `resource_type: database`:
 
 `ANALYZE_SHARD_KEY`, `BYPASS_DOCUMENT_VALIDATION`, `CHANGE_STREAM`, `CLEAR_JUMBO_FLAG`, `COLL_MOD`, `COLL_STATS`, `COMPACT`, `CONVERT_TO_CAPPED`, `CREATE_COLLECTION`, `CREATE_INDEX`, `DB_HASH`, `DB_STATS`, `DROP_COLLECTION`, `DROP_DATABASE`, `DROP_INDEX`, `ENABLE_PROFILER`, `FIND`, `INSERT`, `KILL_ANY_CURSOR`, `LIST_COLLECTIONS`, `LIST_INDEXES`, `MOVE_CHUNK`, `RE_INDEX`, `REFINE_COLLECTION_SHARD_KEY`, `REMOVE`, `RENAME_COLLECTION_SAME_DB`, `RESHARD_COLLECTION`, `SPLIT_CHUNK`, `UPDATE`, `VALIDATE`.

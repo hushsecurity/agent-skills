@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- `hush-uam-manifest`: `all_databases` on MongoDB grants. A grant with it applies to every database instead of the credential's `db_name`, so one privilege can read the same collection in every tenant's database. Such a privilege works only with a credential whose `auth_source` is `admin`; the skill confirms with the user before emitting it with any action outside MongoDB's built-in `read` role (`changeStream`, `collStats`, `dbHash`, `dbStats`, `find`, `killCursors`, `listCollections`, `listIndexes`, `listSearchIndexes` and `planCacheRead`), or with `all`. On Terraform it needs provider 1.33.0. With a custom role instead of `userAdminAnyDatabase`, the root user needs `grantRole` on `admin` for it.
+
 - `tools/mcp/`: a generated copy of `hush-uam-manifest` for the Hush MCP server (lens) to serve as a document, so Ask Hush and other MCP clients can run the interview. A preamble covers what those clients may lack (a question tool, the user's repo, a filesystem) and points the agent at lens's read tools, so it can offer policy suggestions and existing credentials, privileges and policies instead of asking for them. The Claude Code skill is unchanged.
 
 - `hush-uam-manifest`: the AccessPolicy `priority`. When two policies can match the same workload and deliver the same environment variable, file or cloud identity, the skill gives the one that should win a higher `priority`, since no attestation criterion can keep the other policy away from a workload. For two `sdk` policies it offers criteria that do not overlap instead, since the priority decides an SDK secret only between policies with identical criteria. It asks only when the request or the repo shows such an overlap, and leaves the field out otherwise. A new *Overlapping policies* section in `SKILL.md` explains the rule: the higher value wins, 0..1000, default 0, and between equal priorities the winner is arbitrary.
@@ -20,7 +22,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
-- `hush-uam-manifest`: pin the Terraform provider at `~> 1.28`, the current release, instead of `~> 1.24`. The secret-store note no longer calls the per-kind `prefix` rules unreleased: they shipped in provider 1.25.0, and the plain-prefix advice now applies only to a provider pinned below that.
+- `hush-uam-manifest`: pin the Terraform provider at `~> 1.33`, the current release and the first with `all_databases`, instead of `~> 1.24`. The secret-store note no longer calls the per-kind `prefix` rules unreleased: they shipped in provider 1.25.0, and the plain-prefix advice now applies only to a provider pinned below that.
 - `hush-uam-manifest`: the interview no longer offers an `I'll provide it now` option for required fields that have no default. In a live run the option gets clicked, comes back as the answer, and the field has to be asked again. The question text now says to pick `Other` and type the value, and the listed options are concrete: a contextual guess or a clearly marked placeholder.
 
 ## [hush-uam-v0.6.0] - 2026-09-18

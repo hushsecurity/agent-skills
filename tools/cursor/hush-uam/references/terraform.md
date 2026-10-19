@@ -16,7 +16,7 @@ terraform {
   required_providers {
     hush = {
       source  = "hushsecurity/hush"
-      version = "~> 1.28"
+      version = "~> 1.33"
     }
   }
 }
@@ -45,8 +45,8 @@ variable "hush_api_key_secret" {
   at plan time.
 - The repo's own examples pin no version. **Always emit a `version` constraint** — the
   provider adds resources and arguments regularly, and an unpinned `source` silently
-  upgrades. Note what the operator means: `~> 1.28` is `>= 1.28.0, < 2.0.0`, so minor
-  releases still arrive. Use `~> 1.28.0` to hold at 1.28 patch releases.
+  upgrades. Note what the operator means: `~> 1.33` is `>= 1.33.0, < 2.0.0`, so minor
+  releases still arrive. Use `~> 1.33.0` to hold at 1.33 patch releases.
 - **If the repo already declares `hush` in a `required_providers` block, do not emit a
   second one.** Terraform rejects two declarations of the same provider with
   `Duplicate required providers configuration`, even across files. Add the `version` to
@@ -379,6 +379,16 @@ whatever the `version` constraint says, so tell the user to run
 `terraform init -upgrade`. A non-zero priority also needs the deployment's access
 manager at the floor in SKILL.md's Compatibility table, which the API checks at
 `terraform apply`.
+
+## `all_databases` on MongoDB grants
+
+An optional boolean in each `grants` block of `hush_mongodb_access_privilege`, defaulting
+to `false`; see `references/mongodb.md` for what it does and the `auth_source` rule.
+
+It arrived in provider 1.33.0; in 1.32 and older the argument does not exist and the
+plan fails. A `.terraform.lock.hcl` that pins 1.32 or older keeps the old provider
+whatever the `version` constraint says, so tell the user to run
+`terraform init -upgrade`.
 
 ## The provider validates far less than the CRD
 
