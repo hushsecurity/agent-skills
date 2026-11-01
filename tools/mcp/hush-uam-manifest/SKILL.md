@@ -157,6 +157,7 @@ plainly what was asked for and why it changed.
 | `redis` engine `elasticache` | — | 0.14.0 |
 | `rabbitmq` `auto_rotate_root` | — | 0.19.1 |
 | a non-zero policy `priority` | — | 0.29.0 |
+| `github_app` credential type | — | 0.33.1 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
 
@@ -174,6 +175,10 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
   [`references/terraform.md`](references/terraform.md).
 - `all_databases` on `hush_mongodb_access_privilege` grants needs provider 1.33.0 or
   later; see [`references/terraform.md`](references/terraform.md).
+- `hush_github_app_access_credential`, `hush_github_app_access_privilege` and
+  `github_app_delivery_config` need a provider release after 1.38.0; on 1.38.0 or older
+  the plan fails with an unsupported resource type or argument. Tell the user to raise
+  the `version` constraint and run `terraform init -upgrade`.
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
   quoting its version at them describes a requirement they do not have. These floors are
@@ -243,10 +248,12 @@ workload namespace and SA name.
     name, label key+value.
 - **Delivery config** — type *and* item details together.
   - The type first: `env` (split vars), `env` (connection-string template), `volume`,
-    `sdk`, or the matching WIF type. For DB-style creds the template is usually right.
+    `sdk`, or the matching WIF or `github_app` type. For DB-style creds the template is
+    usually right.
   - **Immediately after**, ask the item-level details the choice unlocks: one env var name
     per field, or the single var name for a template, or mount point + file paths, or the
-    SDK secret name + key names, or the WIF role/pool details.
+    SDK secret name + key names, or the WIF role/pool details, or, for `github_app`,
+    whether the workload configures git itself.
 - **Priority** -- *only when this policy overlaps another one*: both can match the same
   workload and deliver the same environment variable, file or cloud identity.
   Look for it in the prompt (a canary, a dev workload, "only these pods get a different
@@ -348,7 +355,8 @@ type. A policy carries **at most one** privilege on both targets.
 
 ## Delivery modes
 
-Six, identical on both targets: `env`, `volume`, `sdk`, `aws_wif`, `gcp_wif`, `azure_wif`.
+Seven, identical on both targets: `env`, `volume`, `sdk`, `aws_wif`, `gcp_wif`, `azure_wif`,
+`github_app`.
 Exactly one per policy. A workload that needs two — say a file *and* an SDK secret — gets
 two policies sharing the same credential, privilege and attestation. The syntax differs —
 see the target reference file.
@@ -361,6 +369,10 @@ WIF constraints (enforced by the API on both targets):
 - `subject_kind: service_account` requires both `k8s:ns` and `k8s:sa` criteria.
 - `subject_kind: hush_subject` requires `subject`, and the (credential, subject) pair must
   be unique across policies.
+
+`github_app` delivery works the same way: only with a `github_app` credential, which
+accepts no other delivery, and never with `k8s:container-name`. See
+[`references/github_app.md`](references/github_app.md).
 
 Name and path rules, also enforced on both:
 
@@ -442,6 +454,7 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `apigee` | yes | [`references/apigee.md`](references/apigee.md) | GCP Apigee |
 | `datadog` | yes | [`references/datadog.md`](references/datadog.md) | + `references/datadog-scopes.md` |
 | `gitlab` | yes | [`references/gitlab.md`](references/gitlab.md) | |
+| `github_app` | yes | [`references/github_app.md`](references/github_app.md) | `github_app` delivery only |
 | `salesforce` | yes | [`references/salesforce.md`](references/salesforce.md) | |
 | `sendgrid` | yes | [`references/sendgrid.md`](references/sendgrid.md) | + `references/sendgrid-scopes.md` |
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + `references/twilio-permissions.md` |
@@ -504,6 +517,8 @@ These are enforced by the Hush API on both targets:
 - WIF delivery only works with the matching WIF credential type, forbids
   `k8s:container-name`, and `subject_kind: service_account` needs both `k8s:ns` and
   `k8s:sa`.
+- `github_app` delivery only works with a `github_app` credential (and is the only delivery
+  that credential accepts), and forbids `k8s:container-name`.
 - Delivery name and path rules as listed under "Delivery modes".
 - Template variables must name real fields on the credential.
 - `priority` takes 0..1000, and a non-zero one is refused on a deployment whose access

@@ -94,7 +94,7 @@ arguments on the resource, in two forms:
 
 `<field>` and `<field>_wo` always conflict — never set both. Whether one of them is
 *required* varies, and the absence of `ExactlyOneOf` does **not** mean the secret is
-optional. 16 of the 29 types mark the pair `ExactlyOneOf`; of the rest:
+optional. 17 of the 30 types mark the pair `ExactlyOneOf`; of the rest:
 
 - **Omittable, but only as a whole pair** — `apigee`, `aws_access_key`, `azure_app`,
   `bedrock`, `gcp_sa`. Leaving the credential *entirely* without one is legitimate and
@@ -267,11 +267,12 @@ Terraform you need its `acr-` / `apr-` ID, or you `terraform import` it into sta
 (`hush_deployment`, `hush_secret_store`, the integrations and `hush_notification_channel`
 *do* support name lookup; credentials and privileges do not.)
 
-## Delivery — six blocks, exactly one
+## Delivery — seven blocks, exactly one
 
-`deliveryConfig: {type: X, config: {...}}` becomes six named blocks under `ExactlyOneOf`:
+`deliveryConfig: {type: X, config: {...}}` becomes seven named blocks under `ExactlyOneOf`:
 `env_delivery_config`, `volume_delivery_config`, `sdk_delivery_config`,
-`aws_wif_delivery_config`, `gcp_wif_delivery_config`, `azure_wif_delivery_config`.
+`aws_wif_delivery_config`, `gcp_wif_delivery_config`, `azure_wif_delivery_config`,
+`github_app_delivery_config`.
 Exactly one must be present — the docs group them under "Optional", but a policy with none
 is rejected.
 
@@ -337,6 +338,9 @@ aws_wif_delivery_config {
 `service_account_token_lifetime` (default 3600); `azure_wif_delivery_config` requires
 `tenant_id` and `client_id` alongside `subject_kind` / `subject`.
 
+`github_app_delivery_config` takes only `git_credential_helper` (default `true`); see
+[`github_app.md`](github_app.md).
+
 ## Templates must escape `$` as `$$`
 
 HCL uses `${...}` for its own interpolation, so every Hush template placeholder is written
@@ -398,6 +402,8 @@ are real and enforced — but only by the API, at `terraform apply`, after a cle
 - WIF delivery must match the credential type (`aws_wif` ↔ `aws_wif`), and WIF credentials
   cannot use `env`/`volume`/`sdk`.
 - `k8s:container-name` is forbidden in any policy with WIF delivery.
+- `github_app` delivery needs a `github_app` credential, which accepts no other delivery,
+  and also forbids `k8s:container-name`.
 - `subject_kind = "service_account"` requires **both** a `k8s:ns` and a `k8s:sa` criterion.
 - `key` is required for `k8s:pod-label` and **must be absent** for the other four criterion
   types. Terraform accepts `key` on any of them.
