@@ -103,7 +103,7 @@ spec:
       key: <label-key>            # required only for k8s:pod-label
       value: <label-value>
   deliveryConfig:
-    type: env                     # env, volume, sdk, aws_wif, gcp_wif, azure_wif
+    type: env                     # env, volume, sdk, aws_wif, gcp_wif, azure_wif, github_app
     config:
       <delivery-type-specific>
 ```
