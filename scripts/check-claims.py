@@ -84,10 +84,14 @@ def catalog_types(skill_md: str) -> dict[str, bool]:
     """Type name -> takes a privilege, from the SKILL.md catalog table."""
     types: dict[str, bool] = {}
     for line in skill_md.splitlines():
-        m = re.match(r"^\| `([a-z_]+)` \| (\*\*no\*\*|yes¹?|no) \| \[`references/", line)
+        m = re.match(r"^\| `([a-z_]+)` \| (\*\*no\*\*|yes[¹²]?|no) \| \[`references/", line)
         if m:
             types[m.group(1)] = m.group(2).startswith("yes")
     return types
+
+
+# Catalogued types with no provider resources at all; the skill documents each.
+UNSUPPORTED_BY_PROVIDER = {"pinot"}
 
 
 def check_resources(types: dict[str, bool], provider: Path) -> None:
@@ -95,6 +99,8 @@ def check_resources(types: dict[str, bool], provider: Path) -> None:
     resources = set(git_ls(provider, "internal/provider"))
     check(bool(resources), "could not list the provider's resources")
     for t, takes_priv in types.items():
+        if t in UNSUPPORTED_BY_PROVIDER:
+            continue
         check(
             f"{t}_access_credential" in resources,
             f"credential resource missing for catalogued type `{t}`",
@@ -105,12 +111,18 @@ def check_resources(types: dict[str, bool], provider: Path) -> None:
                 f"privilege resource missing for `{t}`",
                 "the catalog says it takes a privilege",
             )
-    # The documented gap must still be a gap.
+    # The documented gaps must still be gaps.
     check(
         "mariadb_access_privilege" not in resources,
         "mariadb privilege now exists",
         "the skill documents it as unavailable -- drop that note",
     )
+    for t in UNSUPPORTED_BY_PROVIDER:
+        check(
+            f"{t}_access_credential" not in resources,
+            f"{t} credential now exists",
+            "the skill documents the type as unavailable -- drop that note",
+        )
 
 
 def secret_facts(provider: Path, t: str) -> dict[str, bool]:
@@ -572,7 +584,7 @@ def main() -> int:
     k8s_md = (SKILL / "references/kubernetes.md").read_text()
     types = catalog_types(skill_md)
 
-    check(len(types) == 29, "catalog type count", f"found {len(types)}, expected 29")
+    check(len(types) == 30, "catalog type count", f"found {len(types)}, expected 30")
     for t in types:
         check((SKILL / f"references/{t}.md").exists(), f"no reference file for catalogued type `{t}`")
 
