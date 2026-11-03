@@ -150,6 +150,7 @@ plainly what was asked for and why it changed.
 | `redis` engine `aiven` | v0.17.0 | 0.21.0 |
 | `redis` engine `azure_managed_redis` | v0.18.0 | 0.22.1 |
 | `temporal_cloud` credential type | — | 0.18.0 |
+| `pinot` credential type | — | 0.33.0 |
 | `sendgrid` credential type | — | 0.15.0 |
 | `salesforce` credential type | — | 0.14.0 |
 | `azure_wif` credential type | — | 0.14.0 |
@@ -395,6 +396,7 @@ policy — e.g. username and password as separate vars *and* a combined `DATABAS
 | `redis` | `redis://${username}:${password}@${host}:${port}/${database}` |
 | `rabbitmq` | `amqp://${username}:${password}@${host}:${port}/${vhost}` |
 | `elasticsearch` | `http://${username}:${password}@${host}:${port}` |
+| `pinot` | `${broker_url}/query/sql` — a URL, not a connection string; only with `broker_url` set |
 | `snowflake` | `snowflake://${username}@${account}/${database}/${schema}?warehouse=${warehouse}&role=${role}` |
 
 Notes:
@@ -445,12 +447,16 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + `references/twilio-permissions.md` |
 | `temporal_cloud` | yes | [`references/temporal_cloud.md`](references/temporal_cloud.md) | Admin API key in the secret |
 | `kafka` | yes | [`references/kafka.md`](references/kafka.md) | Messaging; `native` or `aiven` engine, fixed at create |
+| `pinot` | yes² | [`references/pinot.md`](references/pinot.md) | Real-time analytics; users live in ZooKeeper |
 | `aws_wif` | **no** | [`references/aws_wif.md`](references/aws_wif.md) | Federation |
 | `gcp_wif` | **no** | [`references/gcp_wif.md`](references/gcp_wif.md) | Federation |
 | `azure_wif` | **no** | [`references/azure_wif.md`](references/azure_wif.md) | Federation |
 
 ¹ `mariadb` has a privilege type on Kubernetes and the API, but **Terraform has no
 `hush_mariadb_access_privilege` resource**.
+
+² `pinot` works on Kubernetes and the API, but **Terraform has no `hush_pinot_*`
+resources** yet. On the Terraform target, do not emit it.
 
 # Workflow
 

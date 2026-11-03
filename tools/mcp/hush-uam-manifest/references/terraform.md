@@ -424,6 +424,9 @@ rather than emitting HCL that will not work:
 - **No `hush_mariadb_access_privilege`.** MariaDB credentials work; the privilege type
   exists in the API but has no Terraform resource. A MariaDB policy needing a privilege
   has to create it outside Terraform and reference the `apr-` ID.
+- **No `hush_pinot_access_credential` or `hush_pinot_access_privilege`.** Pinot works on
+  Kubernetes and the API only. A Terraform user needing Pinot has to create the credential
+  and privilege outside Terraform; a policy can then reference their `acr-` and `apr-` IDs.
 - **`hush_postgres_access_privilege.object_type` accepts only 5 of the API's 16 values** —
   `TABLE`, `SEQUENCE`, `FUNCTION`, `SCHEMA`, `DATABASE`. `VIEW`, `PROCEDURE`, `ROUTINE`,
   `LARGE OBJECT`, `TABLESPACE`, `DOMAIN`, `TYPE`, `LANGUAGE`, `FOREIGN DATA WRAPPER`,
