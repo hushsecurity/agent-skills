@@ -151,6 +151,7 @@ plainly what was asked for and why it changed.
 | `redis` engine `azure_managed_redis` | v0.18.0 | 0.22.1 |
 | `temporal_cloud` credential type | — | 0.18.0 |
 | `pinot` credential type | — | 0.33.0 |
+| `redis` engine `redis_cloud` | — | 0.33.0 |
 | `sendgrid` credential type | — | 0.15.0 |
 | `salesforce` credential type | — | 0.14.0 |
 | `azure_wif` credential type | — | 0.14.0 |
@@ -173,6 +174,8 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
 - `priority` on `hush_access_policy` needs provider 1.28.0 or later; see
   [`references/terraform.md`](references/terraform.md).
 - `all_databases` on `hush_mongodb_access_privilege` grants needs provider 1.33.0 or
+  later; see [`references/terraform.md`](references/terraform.md).
+- `engine = "redis_cloud"` on `hush_redis_access_credential` needs provider 1.39.0 or
   later; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
@@ -428,7 +431,7 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `mariadb` | yes¹ | [`references/mariadb.md`](references/mariadb.md) | DB |
 | `mongodb` | yes | [`references/mongodb.md`](references/mongodb.md) | DB |
 | `mongodb_atlas` | yes | [`references/mongodb_atlas.md`](references/mongodb_atlas.md) | DB; OAuth or API Key auth |
-| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, `aiven`, or `azure_managed_redis` engine, fixed at create |
+| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, `aiven`, `azure_managed_redis`, or `redis_cloud` engine, fixed at create |
 | `elasticsearch` | yes | [`references/elasticsearch.md`](references/elasticsearch.md) | Search |
 | `rabbitmq` | yes | [`references/rabbitmq.md`](references/rabbitmq.md) | Messaging |
 | `snowflake` | yes | [`references/snowflake.md`](references/snowflake.md) | Data warehouse; password or key-pair auth |

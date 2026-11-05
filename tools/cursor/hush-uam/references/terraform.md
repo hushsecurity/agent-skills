@@ -106,7 +106,10 @@ optional. 16 of the 29 types mark the pair `ExactlyOneOf`; of the rest:
   a single secret and no pairing.
 - **Required per engine, checked at plan** — `kafka` and `redis` enforce it in a
   `CustomizeDiff`: `kafka` needs `password` for `engine = "native"` and `token` for
-  `"aiven"`; `redis` needs `password` for `engine = "redis"` and `token` for `"aiven"`.
+  `"aiven"`; `redis` needs `password` for `engine = "redis"`, `token` for `"aiven"`,
+  and `api_secret_key` (or `api_secret_key_wo`) for `"redis_cloud"`, which also forbids
+  `password`. On a `redis_cloud` credential, changing `api_key` fails the plan unless
+  the same change carries a new `api_secret_key` or bumps `api_secret_key_wo_version`.
   The other two redis engines take a *different* secret, both-or-neither:
   `elasticache` forbids `password` but pairs `access_key_id` with `secret_access_key`
   (omit both for AWS workload identity federation), and `azure_managed_redis` pairs
@@ -389,6 +392,20 @@ It arrived in provider 1.33.0; in 1.32 and older the argument does not exist and
 plan fails. A `.terraform.lock.hcl` that pins 1.32 or older keeps the old provider
 whatever the `version` constraint says, so tell the user to run
 `terraform init -upgrade`.
+
+## `engine = "redis_cloud"` on `hush_redis_access_credential`
+
+The engine and its arguments (`api_key`, `api_secret_key`/`api_secret_key_wo` with
+`api_secret_key_wo_version`, `redis_cloud_subscription_id`, `database_id`) arrive in
+provider 1.39.0; in 1.38 and older they do not exist and the plan fails. Pin
+`~> 1.39` for a configuration that uses it, and tell the user to run
+`terraform init -upgrade` if a `.terraform.lock.hcl` holds an older provider. The
+access-manager floor in SKILL.md's Compatibility table applies too, checked at
+`terraform apply`.
+
+The rules midgard enforces are checked at plan here: the required and forbidden fields
+per engine, the 1..2147483647 range of both ids, and the `api_key` rule above. See
+`references/redis.md` for the fields themselves.
 
 ## The provider validates far less than the CRD
 
