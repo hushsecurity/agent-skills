@@ -151,6 +151,7 @@ plainly what was asked for and why it changed.
 | `redis` engine `azure_managed_redis` | v0.18.0 | 0.22.1 |
 | `temporal_cloud` credential type | — | 0.18.0 |
 | `pinot` credential type | — | 0.33.0 |
+| `redis` engine `redis_cloud` | — | 0.33.2 |
 | `sendgrid` credential type | — | 0.15.0 |
 | `salesforce` credential type | — | 0.14.0 |
 | `azure_wif` credential type | — | 0.14.0 |
@@ -179,6 +180,8 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
   `github_app_delivery_config` need a provider release after 1.38.0; on 1.38.0 or older
   the plan fails with an unsupported resource type or argument. Tell the user to raise
   the `version` constraint and run `terraform init -upgrade`.
+- `engine = "redis_cloud"` on `hush_redis_access_credential` needs provider 1.39.0 or
+  later; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
   quoting its version at them describes a requirement they do not have. These floors are
@@ -440,7 +443,7 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `mariadb` | yes¹ | [`references/mariadb.md`](references/mariadb.md) | DB |
 | `mongodb` | yes | [`references/mongodb.md`](references/mongodb.md) | DB |
 | `mongodb_atlas` | yes | [`references/mongodb_atlas.md`](references/mongodb_atlas.md) | DB; OAuth or API Key auth |
-| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, `aiven`, or `azure_managed_redis` engine, fixed at create |
+| `redis` | yes | [`references/redis.md`](references/redis.md) | KV; `redis`, `elasticache`, `aiven`, `azure_managed_redis`, or `redis_cloud` engine, fixed at create |
 | `elasticsearch` | yes | [`references/elasticsearch.md`](references/elasticsearch.md) | Search |
 | `rabbitmq` | yes | [`references/rabbitmq.md`](references/rabbitmq.md) | Messaging |
 | `snowflake` | yes | [`references/snowflake.md`](references/snowflake.md) | Data warehouse; password or key-pair auth |
