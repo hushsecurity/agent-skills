@@ -279,6 +279,9 @@ def check_floors(skill_md: str, midgard: Path) -> None:
         "`redis` engine `azure_managed_redis`": re.search(
             r'HUSH_AZURE_MANAGED_REDIS_MIN_AM_VERSION", "([\d.]+)"', redis
         ),
+        "`redis` engine `redis_cloud`": re.search(
+            r'HUSH_REDIS_CLOUD_MIN_AM_VERSION", "([\d.]+)"', redis
+        ),
         "`rabbitmq` `auto_rotate_root`": re.search(
             r'HUSH_ROOT_ROTATION_MIN_AM_VERSION", "([\d.]+)"', helpers
         ),
