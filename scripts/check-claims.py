@@ -269,7 +269,11 @@ def check_floors(skill_md: str, midgard: Path) -> None:
     # Each is a constant somewhere in midgard rather than a MIN_ACCESS_MANAGER_VERSION.
     redis = git_show(midgard, "midgard/inventory/redis_access_creds.py") or ""
     helpers = git_show(midgard, "midgard/common/helpers.py") or ""
+    postgres = git_show(midgard, "midgard/inventory/postgres_privilege.py") or ""
     sources = {
+        "`member_of` on a `postgres` privilege": re.search(
+            r'HUSH_PG_MEMBER_OF_MIN_AM_VERSION", "([\d.]+)"', postgres
+        ),
         "`redis` engine `elasticache`": re.search(
             r'RedisEngine\.ELASTICACHE:\s*return max\(cls\.MIN_ACCESS_MANAGER_VERSION, "([\d.]+)"', redis
         ),
