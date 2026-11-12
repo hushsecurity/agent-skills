@@ -210,6 +210,7 @@ plainly what was asked for and why it changed.
 | `rabbitmq` `auto_rotate_root` | — | 0.19.1 |
 | a non-zero policy `priority` | — | 0.29.0 |
 | `github_app` credential type | — | 0.33.1 |
+| `mongodb_atlas` privilege `builtin_roles` *(not enforced)* | — | after 0.33.2 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
 
@@ -218,6 +219,11 @@ hush-uam column means the chart version alone is the floor: the API enforces it 
 the access-manager version, and for `priority` the same chart also ships the CRDs and the
 operator that Kubernetes needs. Those rows apply to both targets **except** the two
 marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
+
+The row marked *not enforced* is the exception to "the API enforces it": nothing checks
+it, so below the floor neither `kubectl apply`, reconcile nor `terraform apply` fails.
+Raise it whenever the user picks the field, and say what happens instead; see
+[`references/mongodb_atlas.md`](references/mongodb_atlas.md#built-in-roles).
 
 ### Terraform
 
@@ -238,6 +244,10 @@ marked *Terraform only*: secret stores have no Kubernetes counterpart at all.
   quoting its version at them describes a requirement they do not have. These floors are
   enforced by the API against the access-manager version, so they surface at
   `terraform apply` after a clean plan.
+- `builtin_roles` on `hush_mongodb_atlas_access_privilege` needs a provider release after
+  1.39.0. Its `hush-am` floor in the Compatibility table is **not** enforced, so it does
+  not surface at `terraform apply`; see
+  [`references/mongodb_atlas.md`](references/mongodb_atlas.md#built-in-roles).
 
 Pin a provider version (`version = "~> 1.33"`); the repo's own examples do not, and an
 unpinned `source` upgrades silently.
@@ -378,7 +388,8 @@ be asked individually; never silently fill them in.
 - **Version floor** — *conditional.* If the chosen type or engine has a row in
   [Compatibility](#compatibility), raise it here — this is the first point where type and
   engine are both known. **Never drop the user's chosen type or engine**; generate it and
-  carry the floor into the post-generation note.
+  carry the floor into the post-generation note. A privilege field with a row (Atlas
+  `builtin_roles`) is raised when the user picks it, the same way.
 - **Field values** — all required non-sensitive fields. Pull the list and defaults from
   `references/<type>.md`. Volunteer defaults inline ("port — default 5432").
 - **Secret handling** — **target-dependent.**

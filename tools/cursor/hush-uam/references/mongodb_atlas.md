@@ -42,6 +42,25 @@ Use `all` (lowercase) to grant every action allowed for the resource type.
 
 There is no `all_databases` here, unlike on `mongodb` grants: an Atlas grant always applies to the credential's `db_name`, and the API rejects the field.
 
+### Built-in roles
+
+Some privileges have no Atlas custom-role action, `indexStats` (`$indexStats`) among them; only Atlas built-in roles carry them. Grant those with `builtin_roles`, which are granted on the admin database:
+
+```yaml
+config:
+  builtin_roles: [clusterMonitor]     # the only role the API accepts
+  grants:                             # optional once builtin_roles is set
+    - privileges: [FIND]
+      resource_type: collection
+```
+
+- `clusterMonitor` is the only accepted value. It grants `$indexStats` and the cluster's monitoring commands; it is a monitoring role, not a way to read or write application data.
+- A privilege needs at least one grant or built-in role. `grants` may be empty or left out when `builtin_roles` is set.
+- Needs a `hush-am` release after chart 0.33.2, and the API does not check it. With an older access manager:
+  - a privilege that also has `grants` mints users without the built-in roles and still reports the credential as ready, so `$indexStats` is refused as unauthorized;
+  - a privilege with only `builtin_roles` fails to create its credentials: Atlas rejects the role with "Custom roles must have one or more user privilege actions or inherited roles".
+- On Terraform, `builtin_roles` needs a provider release after 1.39.0.
+
 Valid privileges for `resource_type: database`:
 
 `ANALYZE_SHARD_KEY`, `BYPASS_DOCUMENT_VALIDATION`, `CHANGE_STREAM`, `CLEAR_JUMBO_FLAG`, `COLL_MOD`, `COLL_STATS`, `COMPACT`, `CONVERT_TO_CAPPED`, `CREATE_COLLECTION`, `CREATE_INDEX`, `DB_HASH`, `DB_STATS`, `DROP_COLLECTION`, `DROP_DATABASE`, `DROP_INDEX`, `ENABLE_PROFILER`, `FIND`, `INSERT`, `KILL_ANY_CURSOR`, `LIST_COLLECTIONS`, `LIST_INDEXES`, `MOVE_CHUNK`, `RE_INDEX`, `REFINE_COLLECTION_SHARD_KEY`, `REMOVE`, `RENAME_COLLECTION_SAME_DB`, `RESHARD_COLLECTION`, `SPLIT_CHUNK`, `UPDATE`, `VALIDATE`.
