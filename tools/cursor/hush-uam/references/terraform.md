@@ -412,6 +412,30 @@ per engine, the 1..2147483647 range of both ids, `database` being 0, and the `ap
 rule above. See
 `references/redis.md` for the fields themselves.
 
+## `member_of` on PostgreSQL privileges
+
+An optional set of role names on `hush_postgres_access_privilege`; see
+`references/postgres.md` for what membership grants and what the root user needs.
+`grants` becomes optional with it: the plan refuses a privilege with neither.
+
+```hcl
+resource "hush_postgres_access_privilege" "migrations" {
+  name      = "migrations"
+  member_of = ["app_owner"]
+
+  grants {
+    privileges   = ["CREATE", "USAGE"]
+    object_type  = "SCHEMA"
+    object_names = ["public"]
+  }
+}
+```
+
+It needs a provider release after 1.40.0; on 1.40.0 or older the argument does not exist,
+`grants` is required, and the plan fails. A `.terraform.lock.hcl` pinning an older
+provider keeps it whatever the `version` constraint says, so tell the user to run
+`terraform init -upgrade`.
+
 ## The provider validates far less than the CRD
 
 `hush_access_policy` has **no `CustomizeDiff` and no cross-field validators**. These rules

@@ -160,6 +160,7 @@ plainly what was asked for and why it changed.
 | a non-zero policy `priority` | — | 0.29.0 |
 | `github_app` credential type | — | 0.33.1 |
 | `mongodb_atlas` privilege `builtin_roles` *(not enforced)* | — | after 0.33.2 |
+| `member_of` on a `postgres` privilege | — | 0.34.0 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
 
@@ -188,6 +189,8 @@ Raise it whenever the user picks the field, and say what happens instead; see
   the `version` constraint and run `terraform init -upgrade`.
 - `engine = "redis_cloud"` on `hush_redis_access_credential` needs provider 1.39.0 or
   later; see [`references/terraform.md`](references/terraform.md).
+- `member_of` on `hush_postgres_access_privilege`, and a privilege without `grants`, need
+  a provider release after 1.40.0; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
   `hush-uam` is the Kubernetes operator; a Terraform-only customer does not run it, and
   quoting its version at them describes a requirement they do not have. These floors are
