@@ -94,7 +94,7 @@ arguments on the resource, in two forms:
 
 `<field>` and `<field>_wo` always conflict — never set both. Whether one of them is
 *required* varies, and the absence of `ExactlyOneOf` does **not** mean the secret is
-optional. 17 of the 30 types mark the pair `ExactlyOneOf`; of the rest:
+optional. 18 of the 31 types mark the pair `ExactlyOneOf`; of the rest:
 
 - **Omittable, but only as a whole pair** — `apigee`, `aws_access_key`, `azure_app`,
   `bedrock`, `gcp_sa`. Leaving the credential *entirely* without one is legitimate and

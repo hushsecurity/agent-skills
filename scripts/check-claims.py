@@ -587,7 +587,7 @@ def main() -> int:
     k8s_md = (SKILL / "references/kubernetes.md").read_text()
     types = catalog_types(skill_md)
 
-    check(len(types) == 30, "catalog type count", f"found {len(types)}, expected 30")
+    check(len(types) == 32, "catalog type count", f"found {len(types)}, expected 32")
     for t in types:
         check((SKILL / f"references/{t}.md").exists(), f"no reference file for catalogued type `{t}`")
 
