@@ -100,6 +100,7 @@ plainly what was asked for and why it changed.
 | a non-zero policy `priority` | — | 0.29.0 |
 | `github_app` credential type | — | 0.33.1 |
 | `statsig` credential type | — | 0.34.1 |
+| `cloudflare_r2` credential type | — | 0.34.1 |
 | `mongodb_atlas` privilege `builtin_roles` *(not enforced)* | — | after 0.33.2 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
@@ -130,6 +131,10 @@ Raise it whenever the user picks the field, and say what happens instead; see
 - `hush_statsig_access_credential` and `hush_statsig_access_privilege` need a provider
   release after 1.41.0; on 1.41.0 or older the plan fails with an unsupported resource
   type. Tell the user to raise the `version` constraint and run `terraform init -upgrade`.
+- `hush_cloudflare_r2_access_credential` and `hush_cloudflare_r2_access_privilege` need a
+  provider release after 1.41.0; on 1.41.0 or older the plan fails with an unsupported
+  resource type. Tell the user to raise the `version` constraint and run
+  `terraform init -upgrade`.
 - `engine = "redis_cloud"` on `hush_redis_access_credential` needs provider 1.39.0 or
   later; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
@@ -474,6 +479,7 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `gcp_sa` | yes | [`references/gcp_sa.md`](references/gcp_sa.md) | GCP Service Account |
 | `azure_app` | yes | [`references/azure_app.md`](references/azure_app.md) | Azure Application |
 | `aws_access_key` | yes | [`references/aws_access_key.md`](references/aws_access_key.md) | AWS IAM users |
+| `cloudflare_r2` | yes | [`references/cloudflare_r2.md`](references/cloudflare_r2.md) | Object storage; S3 keys from an account API token |
 | `apigee` | yes | [`references/apigee.md`](references/apigee.md) | GCP Apigee |
 | `datadog` | yes | [`references/datadog.md`](references/datadog.md) | + `references/datadog-scopes.md` |
 | `gitlab` | yes | [`references/gitlab.md`](references/gitlab.md) | |
