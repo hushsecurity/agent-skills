@@ -84,7 +84,7 @@ def catalog_types(skill_md: str) -> dict[str, bool]:
     """Type name -> takes a privilege, from the SKILL.md catalog table."""
     types: dict[str, bool] = {}
     for line in skill_md.splitlines():
-        m = re.match(r"^\| `([a-z_]+)` \| (\*\*no\*\*|yes[¹²]?|no) \| \[`references/", line)
+        m = re.match(r"^\| `([a-z0-9_]+)` \| (\*\*no\*\*|yes[¹²]?|no) \| \[`references/", line)
         if m:
             types[m.group(1)] = m.group(2).startswith("yes")
     return types
@@ -231,7 +231,7 @@ def check_floors(skill_md: str, midgard: Path) -> None:
     """Compatibility floors against midgard's MIN_ACCESS_MANAGER_VERSION."""
     declared: dict[str, str] = {}
     for line in skill_md.splitlines():
-        m = re.match(r"^\| `([a-z_]+)` credential type.*?\| ([\d.]+) \|", line)
+        m = re.match(r"^\| `([a-z0-9_]+)` credential type.*?\| ([\d.]+) \|", line)
         if m:
             declared[m.group(1)] = m.group(2)
 
@@ -587,7 +587,7 @@ def main() -> int:
     k8s_md = (SKILL / "references/kubernetes.md").read_text()
     types = catalog_types(skill_md)
 
-    check(len(types) == 32, "catalog type count", f"found {len(types)}, expected 32")
+    check(len(types) == 33, "catalog type count", f"found {len(types)}, expected 33")
     for t in types:
         check((SKILL / f"references/{t}.md").exists(), f"no reference file for catalogued type `{t}`")
 
