@@ -160,6 +160,7 @@ plainly what was asked for and why it changed.
 | a non-zero policy `priority` | — | 0.29.0 |
 | `github_app` credential type | — | 0.33.1 |
 | `statsig` credential type | — | 0.34.1 |
+| `cloudinary` credential type | — | 0.34.2 |
 | `mongodb_atlas` privilege `builtin_roles` *(not enforced)* | — | after 0.33.2 |
 | a secret store at all *(Terraform only)* | — | 0.21.0 |
 | an extended secret-store prefix *(Terraform only)* | — | 0.27.0 |
@@ -190,6 +191,10 @@ Raise it whenever the user picks the field, and say what happens instead; see
 - `hush_statsig_access_credential` and `hush_statsig_access_privilege` need a provider
   release after 1.41.0; on 1.41.0 or older the plan fails with an unsupported resource
   type. Tell the user to raise the `version` constraint and run `terraform init -upgrade`.
+- `hush_cloudinary_access_credential` and `hush_cloudinary_access_privilege` need a
+  provider release after 1.41.0; on 1.41.0 or older the plan fails with an unsupported
+  resource type. Tell the user to raise the `version` constraint and run
+  `terraform init -upgrade`.
 - `engine = "redis_cloud"` on `hush_redis_access_credential` needs provider 1.39.0 or
   later; see [`references/terraform.md`](references/terraform.md).
 - The type/engine floors above apply here too, but **only the `hush-am` chart column**.
@@ -476,6 +481,7 @@ On Terraform the type is the resource name: `hush_<type>_access_credential` and
 | `salesforce` | yes | [`references/salesforce.md`](references/salesforce.md) | |
 | `sendgrid` | yes | [`references/sendgrid.md`](references/sendgrid.md) | + `references/sendgrid-scopes.md` |
 | `statsig` | yes | [`references/statsig.md`](references/statsig.md) | Server or client SDK key; Console API key in the secret |
+| `cloudinary` | yes | [`references/cloudinary.md`](references/cloudinary.md) | Enterprise only; account management key in the secret |
 | `twilio` | yes | [`references/twilio.md`](references/twilio.md) | + `references/twilio-permissions.md` |
 | `temporal_cloud` | yes | [`references/temporal_cloud.md`](references/temporal_cloud.md) | Admin API key in the secret |
 | `kafka` | yes | [`references/kafka.md`](references/kafka.md) | Messaging; `native` or `aiven` engine, fixed at create |
